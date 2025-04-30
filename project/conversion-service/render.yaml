@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: music-conversion-service
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: SUPABASE_URL
+        value: https://pgxhgbjtrcokvvriynng.supabase.co
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBneGhnYmp0cmNva3Z2cml5bm5nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjIxMDU2OSwiZXhwIjoyMDU3Nzg2NTY5fQ.GFFS8TblPcGwHwiEkkHwgZAEyUhd6hqVbvxjoiht6W0
+        sync: false
+    healthCheckPath: /status/health
+    autoDeploy: true 

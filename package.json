@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "build": "cd project && npm install && npm run build",
+    "start": "cd project && npm run preview"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "pdfjs-dist": "^5.1.91",
+    "react-pdf": "^9.2.1"
+  }
+}
