@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { exec } from 'child_process';
-import { promises as fs } from 'fs';
-import path from 'path';
-import os from 'os';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
-import { conversionService } from '../lib/conversionService';
+import { localConversionService } from '../services/localConversionService';
+import { sheetAnalysisService } from '../services/sheetAnalysisService';
+import { advancedAnalysisService } from '../services/advancedAnalysisService';
 import { 
   Box, 
   Typography, 
@@ -49,7 +47,8 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import { localConversionService } from '../services/localConversionService';
+import ChordVisualizer from '../components/ChordVisualizer';
+
 
 // Componente para exibir o status da conversão
 const ConversionStatus = ({ status }: { status: 'pending' | 'processing' | 'completed' | 'failed' | null }) => {
@@ -282,35 +281,111 @@ const Upload = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'sheet' | 'midi') => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fileType: 'sheet' | 'midi') => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
       
       if (fileType === 'sheet') {
-        // Verificar extensão de arquivo
-        const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-        const validFileTypes = ['xml', 'musicxml', 'mxl', 'svg', 'pdf'];
-        
-        if (!fileExt || !validFileTypes.includes(fileExt)) {
-          setError(`Tipo de arquivo não suportado. Apenas MusicXML, SVG e PDF são aceitos.`);
-          return;
+        try {
+          // Verificar extensão de arquivo
+          const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
+          const validFileTypes = ['xml', 'musicxml', 'mxl', 'svg', 'pdf'];
+          
+          if (!fileExt || !validFileTypes.includes(fileExt)) {
+            setError(`Tipo de arquivo não suportado. Apenas MusicXML, SVG e PDF são aceitos.`);
+            return;
+          }
+          
+          // Verificar tamanho
+          if (selectedFile.size > MAX_FILE_SIZE) {
+            setError(`O arquivo excede o tamanho máximo permitido (5MB).`);
+            return;
+          }
+
+          // Se for MusicXML, validar e analisar
+          if (['xml', 'musicxml', 'mxl'].includes(fileExt)) {
+            console.log('Validando e analisando arquivo MusicXML...');
+            const fileData = await selectedFile.arrayBuffer();
+            
+            // Validar com o serviço local
+            const validation = await localConversionService.validateSheet(
+              new Uint8Array(fileData),
+              selectedFile.name
+            );
+
+            if (!validation.isValid) {
+              setError('O arquivo não parece ser uma partitura válida.');
+              setIsValidFile(false);
+              setValidationMessage('Arquivo inválido ou corrompido.');
+              return;
+            }
+
+            // Análise básica
+            const basicAnalysis = await sheetAnalysisService.analyzeSheet(
+              new Uint8Array(fileData),
+              fileExt
+            );
+
+            // Análise avançada
+            const advancedAnalysis = await advancedAnalysisService.analyzeSheet(
+              new Uint8Array(fileData),
+              selectedFile.name
+            );
+
+            console.log('Análise avançada:', advancedAnalysis);
+
+            // Atualizar o formulário com as informações da análise
+            setFormData(prev => ({
+              ...prev,
+              file: selectedFile,
+              difficulty: advancedAnalysis.difficulty,
+              scales: advancedAnalysis.scales,
+              tags: [...new Set([
+                ...prev.tags,
+                ...advancedAnalysis.chords,
+                ...advancedAnalysis.expression_markers,
+                ...advancedAnalysis.dynamics,
+                ...advancedAnalysis.articulations
+              ])]
+            }));
+
+            setIsValidFile(true);
+            setValidationMessage(
+              `Partitura válida! Tipo: ${validation.type}\n` +
+              `Tom: ${advancedAnalysis.key}\n` +
+              `Compasso: ${advancedAnalysis.time_signature}\n` +
+              `Tempo: ${advancedAnalysis.tempo} BPM\n` +
+              `Dificuldade: ${advancedAnalysisService.getDifficultyLabel(advancedAnalysis.technical_difficulty)}\n` +
+              `Notas: ${advancedAnalysis.notes}\n` +
+              `Compassos: ${advancedAnalysis.measures}\n` +
+              `Complexidade Rítmica: ${advancedAnalysisService.getComplexityLabel(advancedAnalysis.rhythm_complexity)}\n` +
+              `Complexidade Harmônica: ${advancedAnalysisService.getComplexityLabel(advancedAnalysis.harmonic_complexity)}\n` +
+              `Contorno Melódico: ${advancedAnalysisService.getMelodyContourDescription(advancedAnalysis.melody_contour)}\n` +
+              `Instrumentos Recomendados: ${advancedAnalysis.recommended_instruments.join(', ')}`
+            );
+
+            // Mostrar visualização de acordes
+            setChordVisualization(advancedAnalysis.chords);
+          } else {
+            // Para PDF e SVG, apenas verificar o tamanho
+            setIsValidFile(true);
+            setValidationMessage('Arquivo aceito para upload.');
+            setFormData(prev => ({ ...prev, file: selectedFile }));
+          }
+        } catch (error) {
+          console.error('Erro ao validar/analisar arquivo:', error);
+          setError('Erro ao processar o arquivo. Por favor, tente novamente.');
+          setIsValidFile(false);
+          setValidationMessage('Erro na validação do arquivo.');
         }
-        
-        // Verificar tamanho
-        if (selectedFile.size > MAX_FILE_SIZE) {
-          setError(`O arquivo excede o tamanho máximo permitido (5MB).`);
-          return;
-        }
-        
-        setFormData({ ...formData, file: selectedFile });
       } else {
-        // Verificar tamanho do MIDI
+        // Validação do arquivo MIDI
         if (selectedFile.size > MAX_FILE_SIZE) {
           setError(`O arquivo MIDI excede o tamanho máximo permitido (5MB).`);
           return;
         }
         
-        setFormData({ ...formData, midiFile: selectedFile });
+        setFormData(prev => ({ ...prev, midiFile: selectedFile }));
       }
     }
   };
@@ -363,47 +438,49 @@ const Upload = () => {
       return;
     }
 
-    // Validação do formulário
-    if (!formData.title || !formData.composer || !formData.instrument) {
-      setError('Por favor, preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    if (!formData.file) {
-      setError('Por favor, selecione um arquivo de partitura para upload.');
-      return;
-    }
-    
-    // Verificar se o arquivo é válido (se foi verificado)
-    if (isValidFile === false) {
-      setError('O arquivo selecionado não é válido. Por favor, selecione outro arquivo.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setUploadProgress(0);
-    
-    // Iniciar animação de progresso
-    const cleanupProgress = simulateProgress();
-
     try {
-      console.log('Iniciando upload do arquivo:', formData.file.name);
+      // Validação do formulário
+      if (!formData.title || !formData.composer || !formData.instrument) {
+        setError('Por favor, preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      if (!formData.file) {
+        setError('Por favor, selecione um arquivo de partitura para upload.');
+        return;
+      }
+      
+      if (isValidFile === false) {
+        setError('O arquivo selecionado não é válido. Por favor, selecione outro arquivo.');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      setUploadProgress(0);
+      
+      // Iniciar animação de progresso
+      const cleanupProgress = simulateProgress();
+
+      console.log('Iniciando processo de upload...');
       
       // Upload do arquivo de partitura
       const fileExt = formData.file.name.split('.').pop()?.toLowerCase() || '';
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `${Date.now()}-${formData.file.name}`;
       const filePath = `${user.id}/${fileName}`;
 
       console.log('Enviando para o Storage:', filePath);
       
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('music-sheets')
-        .upload(filePath, formData.file);
+        .upload(filePath, formData.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         console.error('Erro no upload do arquivo:', uploadError);
-        throw uploadError;
+        throw new Error(`Erro no upload: ${uploadError.message}`);
       }
       
       console.log('Upload concluído com sucesso:', uploadData);
@@ -411,19 +488,22 @@ const Upload = () => {
       // Upload do arquivo MIDI (se fornecido)
       let midiUrl = null;
       if (formData.midiFile) {
-        console.log('Iniciando upload do MIDI:', formData.midiFile.name);
+        console.log('Iniciando upload do MIDI...');
         
         const midiExt = formData.midiFile.name.split('.').pop();
-        const midiFileName = `${Math.random()}.${midiExt}`;
+        const midiFileName = `${Date.now()}-${formData.midiFile.name}`;
         const midiFilePath = `${user.id}/${midiFileName}`;
 
         const { error: midiUploadError, data: midiUploadData } = await supabase.storage
           .from('music-sheets')
-          .upload(midiFilePath, formData.midiFile);
+          .upload(midiFilePath, formData.midiFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (midiUploadError) {
           console.error('Erro no upload do MIDI:', midiUploadError);
-          throw midiUploadError;
+          throw new Error(`Erro no upload do MIDI: ${midiUploadError.message}`);
         }
         
         midiUrl = midiUploadData.path;
@@ -452,9 +532,9 @@ const Upload = () => {
         scales: formData.scales,
         file_url: uploadData.path,
         midi_url: midiUrl,
-        file_type: fileType, // Usando o tipo de arquivo determinado
+        file_type: fileType,
         user_id: user.id,
-        conversion_status: 'pending',
+        conversion_status: 'completed',
         mei_url: null
       };
       
@@ -468,38 +548,10 @@ const Upload = () => {
 
       if (insertError) {
         console.error('Erro ao inserir no banco:', insertError);
-        throw insertError;
+        throw new Error(`Erro ao salvar no banco: ${insertError.message}`);
       }
       
       console.log('Registro criado com sucesso no banco de dados');
-
-      // Chamar serviço de conversão para iniciar a conversão
-      if (insertData && insertData.length > 0) {
-        const fileId = insertData[0].id;
-        
-        // Atualizar status de conversão na UI
-        setFormData(prev => ({ ...prev, conversionStatus: 'pending' }));
-        
-        // Chamar API de conversão externa
-        try {
-          console.log('Iniciando processo de conversão para MEI via API externa...');
-          const result = await conversionService.startConversion(
-            fileId,
-            uploadData.path,
-            fileExt || 'pdf' || 'musicxml'
-          );
-          
-          if (result.success) {
-            console.log('Conversão iniciada com sucesso:', result);
-          } else {
-            console.error('Erro ao iniciar conversão:', result.error);
-            // Não falhar o upload, apenas logar o erro
-          }
-        } catch (convError) {
-          console.error('Exceção ao chamar API de conversão:', convError);
-          // Não falhar o upload por erro na conversão
-        }
-      }
 
       // Reset do formulário
       setFormData({
@@ -526,7 +578,6 @@ const Upload = () => {
       console.error('Erro completo durante o processo de upload:', err);
       setError(err instanceof Error ? err.message : 'Ocorreu um erro durante o upload. Por favor, tente novamente.');
     } finally {
-      cleanupProgress();
       setLoading(false);
     }
   };
@@ -559,6 +610,8 @@ const Upload = () => {
     `${alpha(theme.palette.primary.light, 0.2)}`,
     `${alpha(theme.palette.secondary.light, 0.15)}`
   ];
+
+  const [chordVisualization, setChordVisualization] = useState<string[] | null>(null);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -1088,6 +1141,19 @@ const Upload = () => {
             </motion.div>
           </Grid>
         </Grid>
+
+        {chordVisualization && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Acordes Detectados
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              {chordVisualization.map((chord, index) => (
+                <ChordVisualizer key={index} chord={chord} />
+              ))}
+            </Box>
+          </Box>
+        )}
       </motion.div>
     </Container>
   );

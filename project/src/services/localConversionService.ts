@@ -11,11 +11,11 @@ interface VerovioToolkit {
       this.name = 'ConversionError';
     }
   }
-  
-  class LocalConversionService {
+
+class LocalConversionService {
     private verovioToolkit: VerovioToolkit | null = null;
-  
-    constructor() {
+
+  constructor() {
       this.initializeToolkit();
     }
   
@@ -33,7 +33,7 @@ interface VerovioToolkit {
   
           // @ts-ignore - Verovio é carregado globalmente
           this.verovioToolkit = new window.verovio.toolkit();
-        } catch (error) {
+    } catch (error) {
           throw new ConversionError(
             'Falha ao inicializar o conversor',
             'Não foi possível carregar a biblioteca Verovio'
@@ -148,7 +148,57 @@ interface VerovioToolkit {
           error instanceof Error ? error.message : 'Erro desconhecido durante a geração do MIDI'
         );
       }
+      
     }
-  }
   
-  export const localConversionService = new LocalConversionService();
+    public async validateSheet(fileData: Uint8Array, originalFileName: string): Promise<{ isValid: boolean; type: 'score' | 'chord' | 'unknown' }> {
+      try {
+        await this.initializeToolkit();
+        if (!this.verovioToolkit) {
+          throw new ConversionError(
+            'Conversor não inicializado',
+            'O serviço de conversão não está disponível no momento'
+          );
+        }
+  
+        const fileExt = originalFileName.split('.').pop()?.toLowerCase() || '';
+        const decoder = new TextDecoder();
+        const fileContent = decoder.decode(fileData);
+  
+        // Verifica se é um arquivo MusicXML
+        if (['xml', 'musicxml', 'mxl'].includes(fileExt)) {
+          const success = this.verovioToolkit.loadData(fileContent);
+          if (!success) {
+            return { isValid: false, type: 'unknown' };
+          }
+  
+          // Verifica se contém elementos de partitura
+          const hasScoreElements = fileContent.includes('<score-partwise') || 
+                                 fileContent.includes('<score-timewise') ||
+                                 fileContent.includes('<measure') ||
+                                 fileContent.includes('<note>');
+  
+          // Verifica se contém elementos de cifra
+          const hasChordElements = fileContent.includes('<harmony') ||
+                                 fileContent.includes('<chord') ||
+                                 fileContent.includes('<figured-bass');
+  
+          if (hasScoreElements && !hasChordElements) {
+            return { isValid: true, type: 'score' };
+          } else if (hasChordElements && !hasScoreElements) {
+            return { isValid: true, type: 'chord' };
+          } else if (hasScoreElements && hasChordElements) {
+            // Se tiver ambos, considera como partitura
+            return { isValid: true, type: 'score' };
+          }
+        }
+  
+        return { isValid: false, type: 'unknown' };
+    } catch (error) {
+        console.error('Erro na validação:', error);
+        return { isValid: false, type: 'unknown' };
+      }
+  }
+}
+
+export const localConversionService = new LocalConversionService(); 
