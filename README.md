@@ -75,7 +75,6 @@ Certifique-se de que tem as seguintes ferramentas instaladas:
    yarn dev
    ```
 
-5. Aceda à aplicação em [http://localhost:5173](http://localhost:5173) OU [http://localhost:5173](http://localhost:5173).
 
 ## Scripts Disponíveis
 
