@@ -241,18 +241,20 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
+                transition={{ duration: 0.9, delay: 0.3 }}
               >
-                <Box 
-                  component="img" 
-                  src="https://source.unsplash.com/featured/?music,sheet" 
-                  alt="Partituras" 
-                  sx={{ 
-                    width: '100%', 
-                    borderRadius: 4,
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-                  }} 
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, justifyContent: 'center' }}>
+                  <img
+                    src="/logoPP.png"
+                    alt="Logo"
+                    style={{
+                      height: 300,
+                      maxWidth: 300,
+                      width: 'auto',
+                      display: 'block'
+                    }}
+                  />
+                </Box>
               </motion.div>
             </Grid>
           </Grid>

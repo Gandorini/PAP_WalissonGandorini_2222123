@@ -174,6 +174,16 @@ const SheetViewer = () => {
     };
 
     fetchSheetData();
+
+    // Realtime: escuta mudanças na partitura específica
+    const channel = supabase
+      .channel('sheet:music_sheets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'music_sheets', filter: `id=eq.${id}` }, fetchSheetData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id, user]);
 
   const handleComment = async (e: React.FormEvent) => {
@@ -564,6 +574,15 @@ const SheetViewer = () => {
     }
   ];
 
+  const handleDelete = async () => {
+    if (!sheet) return;
+    const { error } = await supabase
+      .from('music_sheets')
+      .delete()
+      .eq('id', sheet.id);
+    if (!error) navigate('/library');
+  };
+
   if (loading) {
     return (
       <Box 
@@ -631,6 +650,8 @@ const SheetViewer = () => {
   const averageRating = ratings.length
     ? ratings.reduce((acc, curr) => acc + curr.score, 0) / ratings.length
     : 0;
+
+  const isOwner = user && sheet.user_id === user.id;
 
   return (
     <Container maxWidth="xl">

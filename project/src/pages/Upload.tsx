@@ -289,10 +289,10 @@ const Upload = () => {
         try {
           // Verificar extensão de arquivo
           const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-          const validFileTypes = ['xml', 'musicxml', 'mxl', 'svg', 'pdf'];
+          const validFileTypes = ['xml', 'musicxml', 'mxl', 'svg', 'pdf', 'mid', 'midi'];
           
           if (!fileExt || !validFileTypes.includes(fileExt)) {
-            setError(`Tipo de arquivo não suportado. Apenas MusicXML, SVG e PDF são aceitos.`);
+            setError(`Tipo de arquivo não suportado. Apenas MusicXML, SVG, PDF e MIDI são aceitos.`);
             return;
           }
           
@@ -302,81 +302,53 @@ const Upload = () => {
             return;
           }
 
-          // Se for MusicXML, validar e analisar
-          if (['xml', 'musicxml', 'mxl'].includes(fileExt)) {
-            console.log('Validando e analisando arquivo MusicXML...');
-            const fileData = await selectedFile.arrayBuffer();
-            
-            // Validar com o serviço local
-            const validation = await localConversionService.validateSheet(
-              new Uint8Array(fileData),
-              selectedFile.name
-            );
-
-            if (!validation.isValid) {
-              setError('O arquivo não parece ser uma partitura válida.');
+          // Enviar para o backend para análise automática
+          const formDataBackend = new FormData();
+          formDataBackend.append('file', selectedFile);
+          setIsLoading(true);
+          setValidationMessage('Analisando arquivo...');
+          setIsValidFile(null);
+          setError('');
+          
+          const response = await fetch('http://localhost:8000/analyze-sheet', {
+            method: 'POST',
+            body: formDataBackend
+          });
+          const analysis = await response.json();
+          setIsLoading(false);
+          if (!response.ok) {
+            setError(analysis.detail || 'Erro ao analisar arquivo.');
               setIsValidFile(false);
-              setValidationMessage('Arquivo inválido ou corrompido.');
+            setValidationMessage('Arquivo inválido ou não suportado.');
               return;
             }
 
-            // Análise básica
-            const basicAnalysis = await sheetAnalysisService.analyzeSheet(
-              new Uint8Array(fileData),
-              fileExt
-            );
-
-            // Análise avançada
-            const advancedAnalysis = await advancedAnalysisService.analyzeSheet(
-              new Uint8Array(fileData),
-              selectedFile.name
-            );
-
-            console.log('Análise avançada:', advancedAnalysis);
-
-            // Atualizar o formulário com as informações da análise
+          // Preencher automaticamente os campos do formulário
             setFormData(prev => ({
               ...prev,
               file: selectedFile,
-              difficulty: advancedAnalysis.difficulty,
-              scales: advancedAnalysis.scales,
+            title: analysis.title || prev.title,
+            composer: analysis.composer || prev.composer,
+            instrument: analysis.instrument || prev.instrument,
+            difficulty: analysis.difficulty || prev.difficulty,
+            scales: analysis.scales || prev.scales,
               tags: [...new Set([
                 ...prev.tags,
-                ...advancedAnalysis.chords,
-                ...advancedAnalysis.expression_markers,
-                ...advancedAnalysis.dynamics,
-                ...advancedAnalysis.articulations
+              ...(analysis.chords || []),
+              ...(analysis.expression_markers || []),
+              ...(analysis.dynamics || []),
+              ...(analysis.articulations || [])
               ])]
             }));
-
             setIsValidFile(true);
-            setValidationMessage(
-              `Partitura válida! Tipo: ${validation.type}\n` +
-              `Tom: ${advancedAnalysis.key}\n` +
-              `Compasso: ${advancedAnalysis.time_signature}\n` +
-              `Tempo: ${advancedAnalysis.tempo} BPM\n` +
-              `Dificuldade: ${advancedAnalysisService.getDifficultyLabel(advancedAnalysis.technical_difficulty)}\n` +
-              `Notas: ${advancedAnalysis.notes}\n` +
-              `Compassos: ${advancedAnalysis.measures}\n` +
-              `Complexidade Rítmica: ${advancedAnalysisService.getComplexityLabel(advancedAnalysis.rhythm_complexity)}\n` +
-              `Complexidade Harmônica: ${advancedAnalysisService.getComplexityLabel(advancedAnalysis.harmonic_complexity)}\n` +
-              `Contorno Melódico: ${advancedAnalysisService.getMelodyContourDescription(advancedAnalysis.melody_contour)}\n` +
-              `Instrumentos Recomendados: ${advancedAnalysis.recommended_instruments.join(', ')}`
-            );
-
-            // Mostrar visualização de acordes
-            setChordVisualization(advancedAnalysis.chords);
-          } else {
-            // Para PDF e SVG, apenas verificar o tamanho
-            setIsValidFile(true);
-            setValidationMessage('Arquivo aceito para upload.');
-            setFormData(prev => ({ ...prev, file: selectedFile }));
-          }
+          setValidationMessage('Arquivo analisado e campos preenchidos automaticamente!');
+          setChordVisualization(analysis.chords || []);
         } catch (error) {
           console.error('Erro ao validar/analisar arquivo:', error);
           setError('Erro ao processar o arquivo. Por favor, tente novamente.');
           setIsValidFile(false);
           setValidationMessage('Erro na validação do arquivo.');
+          setIsLoading(false);
         }
       } else {
         // Validação do arquivo MIDI
@@ -384,7 +356,6 @@ const Upload = () => {
           setError(`O arquivo MIDI excede o tamanho máximo permitido (5MB).`);
           return;
         }
-        
         setFormData(prev => ({ ...prev, midiFile: selectedFile }));
       }
     }

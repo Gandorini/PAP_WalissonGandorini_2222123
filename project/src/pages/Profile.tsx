@@ -19,6 +19,12 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Snackbar,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -31,6 +37,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import MusicSheetCard from '../components/MusicSheetCard';
 import { alpha } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 // Interface que estende o User do Supabase
 interface UserProfile extends User {
@@ -43,6 +50,7 @@ interface UserProfile extends User {
     followers: number;
     following: number;
   };
+  bio?: string;
 }
 
 interface TabPanelProps {
@@ -69,6 +77,7 @@ function TabPanel(props: TabPanelProps) {
 
 const Profile = () => {
   const { user: authUser, signOut } = useAuthStore();
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [sheets, setSheets] = useState<MusicSheet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,43 +85,43 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [uploading, setUploading] = useState(false);
   const [tabValue, setTabValue] = useState(0);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showDeleteProfile, setShowDeleteProfile] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editProfile, setEditProfile] = useState({
+    username: user?.username || '',
+    location: user?.location || '',
+    bio: user?.bio || '',
+  });
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!authUser) return;
 
       try {
-        // Inicializando o userProfile com valores mock para demonstração
-        const userProfile: UserProfile = {
-          ...authUser,
-          username: authUser.email?.split('@')[0] || 'Usuário',
-          location: 'Portugal',
-          joinDate: new Date().toLocaleDateString(),
-          stats: {
-            downloads: 0,
-            followers: 0,
-            following: 0
-          }
-        };
-        
-        setUser(userProfile);
-
-        const { data, error: sheetsError } = await supabase
-          .from('music_sheets')
+        // Buscar o perfil completo da tabela 'profiles'
+        const { data: profile, error } = await supabase
+          .from('profiles')
           .select('*')
-          .eq('user_id', authUser.id)
-          .order('created_at', { ascending: false });
+          .eq('id', authUser.id)
+          .single();
 
-        if (sheetsError) throw sheetsError;
-        setSheets(data);
+        if (error) throw error;
 
-        if (userProfile.avatar_url) {
+        setUser(profile);
+
+        if (profile.avatar_url) {
           const { data: { publicUrl } } = supabase
             .storage
-            .from('avatars')
-            .getPublicUrl(userProfile.avatar_url);
+            .from('avatar')
+            .getPublicUrl(profile.avatar_url);
           setAvatarUrl(publicUrl);
         }
+
+        console.log('avatar_url:', profile.avatar_url);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -123,6 +132,32 @@ const Profile = () => {
     fetchUserData();
   }, [authUser]);
 
+  useEffect(() => {
+    if (!authUser) return;
+    const fetchSheets = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('music_sheets')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false });
+      if (!error) setSheets(data || []);
+      setLoading(false);
+    };
+
+    fetchSheets();
+
+    // Realtime: escuta mudanças só do usuário logado
+    const channel = supabase
+      .channel('profile:music_sheets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'music_sheets', filter: `user_id=eq.${authUser.id}` }, fetchSheets)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authUser]);
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !e.target.files?.[0]) return;
 
@@ -130,16 +165,16 @@ const Profile = () => {
       setUploading(true);
       const file = e.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}.${fileExt}`;
+      const fileName = `profiles/${user.id}/${user.id}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('avatar')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { error: updateError } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ avatar_url: fileName })
         .eq('id', user.id);
 
@@ -147,7 +182,7 @@ const Profile = () => {
 
       const { data: { publicUrl } } = supabase
         .storage
-        .from('avatars')
+        .from('avatar')
         .getPublicUrl(fileName);
       
       setAvatarUrl(publicUrl);
@@ -161,6 +196,48 @@ const Profile = () => {
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  const joinDate = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString()
+    : '---';
+
+  const handleRequestDelete = (sheetId: string) => {
+    setDeleteId(sheetId);
+  };
+
+const handleDeleteSheet = async () => {
+  if (!deleteId) return;
+  const { error } = await supabase
+    .from('music_sheets')
+    .delete()
+    .eq('id', deleteId);
+  if (error) {
+    setErrorMsg('Erro ao excluir partitura: ' + (error.message || 'Tente novamente.'));
+  } else {
+    setSheets(prev => prev.filter(sheet => sheet.id !== deleteId));
+    setErrorMsg('Partitura excluída com sucesso!');
+  }
+  setDeleteId(null);
+};
+
+const handleDeleteProfile = async () => {
+  setShowDeleteProfile(false);
+  try {
+    const headers: HeadersInit = authUser?.id ? { 'x-user-id': authUser.id } : {};
+    const res = await fetch(`${process.env.REACT_APP_API_URL || ''}/profile`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (res.ok) {
+      await supabase.auth.signOut();
+      navigate('/');
+    } else {
+      setErrorMsg('Erro ao excluir conta. Tente novamente.');
+    }
+  } catch (err) {
+    setErrorMsg('Erro ao excluir conta. Tente novamente.');
+  }
+};
 
   if (!user) return null;
 
@@ -290,7 +367,8 @@ const Profile = () => {
                         width: 140, 
                         height: 140,
                         border: theme => `5px solid ${theme.palette.background.paper}`,
-                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+                        mb: 2
                       }}
                     />
                   </motion.div>
@@ -313,13 +391,34 @@ const Profile = () => {
                         mt: 2, 
                         textTransform: 'none',
                         borderRadius: '20px',
-                        backgroundColor: 'background.paper'
+                        backgroundColor: 'background.paper',
+                        mb: 2
                       }}
                       disabled={uploading}
                     >
                       {uploading ? 'Enviando...' : 'Alterar foto'}
                     </Button>
                   </label>
+                  {/* Botão de upload de partitura só no mobile */}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<UploadIcon />}
+                    sx={{
+                      mt: 2,
+                      mb: 2,
+                      borderRadius: '20px',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 600,
+                      display: { xs: 'block', md: 'none' }
+                    }}
+                    onClick={() => {
+                      window.location.href = '/upload';
+                    }}
+                  >
+                    Enviar Partitura
+                  </Button>
                 </Box>
                 
                 {/* Informações do perfil */}
@@ -334,9 +433,6 @@ const Profile = () => {
                     <Box sx={{ textAlign: { xs: 'center', md: 'left' } }}>
                       <Typography variant="h4" gutterBottom fontWeight="bold">
                         {user?.username}
-                      </Typography>
-                      <Typography color="text.secondary">
-                        {user?.email}
                       </Typography>
                       <Stack 
                         direction="row" 
@@ -356,7 +452,7 @@ const Profile = () => {
                         />
                         <Chip 
                           icon={<CalendarToday fontSize="small" />} 
-                          label={`Desde ${user?.joinDate}`} 
+                          label={`Desde ${joinDate}`} 
                           size="small" 
                           sx={{ 
                             borderRadius: '20px',
@@ -366,19 +462,20 @@ const Profile = () => {
                       </Stack>
                     </Box>
                     
-                    <Stack direction="row" spacing={2}>
+                    <Stack direction="row" spacing={2.4} sx={{ mt: 10 }}>
                       <Button
                         variant="contained"
                         color="primary"
                         startIcon={<EditIcon />}
                         onClick={() => {
-                          // Implementar edição de perfil
+                          setEditProfile({
+                            username: user?.username || '',
+                            location: user?.location || '',
+                            bio: user?.bio || '',
+                          });
+                          setEditOpen(true);
                         }}
-                        sx={{ 
-                          borderRadius: '20px',
-                          textTransform: 'none',
-                          px: 3
-                        }}
+                        sx={{ borderRadius: '20px', textTransform: 'none', px: { xs: 3, md: 2 }, minWidth: 120, maxWidth: 200 }}
                       >
                         Editar Perfil
                       </Button>
@@ -386,12 +483,17 @@ const Profile = () => {
                         variant="outlined"
                         color="primary"
                         onClick={() => signOut()}
-                        sx={{ 
-                          borderRadius: '20px',
-                          textTransform: 'none'
-                        }}
+                        sx={{ borderRadius: '20px', textTransform: 'none' }}
                       >
                         Sair
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        sx={{ borderRadius: '20px', textTransform: 'none' }}
+                        onClick={() => setShowDeleteProfile(true)}
+                      >
+                        Excluir Conta
                       </Button>
                     </Stack>
                   </Stack>
@@ -595,6 +697,8 @@ const Profile = () => {
                               onPlay={() => {}}
                               onComment={() => {}}
                               onClick={() => {}}
+                              isOwner={user?.id === sheet.user_id}
+                              onDelete={() => handleRequestDelete(sheet.id)}
                             />
                           </motion.div>
                         </Grid>
@@ -649,6 +753,94 @@ const Profile = () => {
           </Paper>
         </motion.div>
       </Container>
+
+      <Dialog open={!!deleteId} onClose={() => setDeleteId(null)}>
+        <DialogTitle>Excluir partitura</DialogTitle>
+        <DialogContent>
+          Tem certeza que deseja excluir esta partitura?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteId(null)}>Cancelar</Button>
+          <Button onClick={handleDeleteSheet} color="error" variant="contained">Excluir</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showDeleteProfile} onClose={() => setShowDeleteProfile(false)}>
+        <DialogTitle>Excluir Conta</DialogTitle>
+        <DialogContent>
+          Tem certeza que deseja excluir sua conta? Esta ação é irreversível.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDeleteProfile(false)}>Cancelar</Button>
+          <Button onClick={handleDeleteProfile} color="error" variant="contained">Excluir</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
+        <DialogTitle>Editar Perfil</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Nome de usuário"
+            value={editProfile.username}
+            onChange={e => setEditProfile(p => ({ ...p, username: e.target.value }))}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="Localização"
+            value={editProfile.location}
+            onChange={e => setEditProfile(p => ({ ...p, location: e.target.value }))}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            label="Bio"
+            value={editProfile.bio}
+            onChange={e => setEditProfile(p => ({ ...p, bio: e.target.value }))}
+            fullWidth
+            margin="normal"
+            multiline
+            rows={3}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditOpen(false)}>Cancelar</Button>
+          <Button onClick={async () => {
+            const { error } = await supabase
+              .from('profiles')
+              .update(editProfile)
+              .eq('id', user.id);
+            if (!error) {
+              setEditOpen(false);
+              setEditSuccess(true);
+            } else {
+              setEditError('Erro ao salvar perfil.');
+            }
+          }} variant="contained">Salvar</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!editError}
+        autoHideDuration={4000}
+        onClose={() => setEditError('')}
+        message={editError}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
+
+      <Snackbar
+        open={editSuccess}
+        autoHideDuration={3000}
+        onClose={() => setEditSuccess(false)}
+        message="Perfil atualizado com sucesso!"
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      />
+
+      {errorMsg && (
+        <Alert severity="error" onClose={() => setErrorMsg('')} sx={{ mt: 2 }}>
+          {errorMsg}
+        </Alert>
+      )}
     </Box>
   );
 };

@@ -21,6 +21,7 @@ import {
   Comment,
   MusicNote,
   PictureAsPdf,
+  Delete,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -43,6 +44,8 @@ interface MusicSheetCardProps {
   onPlay: () => void;
   onComment: () => void;
   onClick: () => void;
+  isOwner?: boolean;
+  onDelete?: () => void;
 }
 
 const MotionCard = motion(Card);
@@ -64,6 +67,8 @@ export default function MusicSheetCard({
   onPlay,
   onComment,
   onClick,
+  isOwner,
+  onDelete,
 }: MusicSheetCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
@@ -352,6 +357,19 @@ export default function MusicSheetCard({
           <Typography variant="body2" color="text.secondary">
             {comments}
           </Typography>
+          {isOwner && onDelete && (
+            <Tooltip title="Excluir partitura">
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                color="error"
+              >
+                <Delete />
+              </IconButton>
+            </Tooltip>
+          )}
         </Stack>
       </CardActions>
     </MotionCard>

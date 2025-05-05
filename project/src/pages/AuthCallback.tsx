@@ -16,7 +16,7 @@ export default function AuthCallback() {
           console.log('Processando callback de autenticação OAuth');
           // O Supabase vai gerenciar automaticamente o callback
           // devido à configuração detectSessionInUrl: true
-          
+
           // Aguardar o processamento do Supabase
           await new Promise(resolve => setTimeout(resolve, 1000));
           
@@ -25,7 +25,7 @@ export default function AuthCallback() {
           
           if (session) {
             console.log('Sessão criada com sucesso, redirecionando para app');
-            navigate('/app');
+            navigate('/Home');
           } else {
             console.log('Nenhuma sessão encontrada, redirecionando para auth');
             navigate('/auth');

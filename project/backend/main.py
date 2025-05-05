@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from music21 import *
 import json
@@ -6,6 +6,8 @@ import tempfile
 import os
 from typing import Dict, List, Optional
 import numpy as np
+from sheets_crud import router as sheets_router
+from supabase import create_client
 
 app = FastAPI()
 
@@ -20,6 +22,9 @@ app.add_middleware(
 
 class SheetAnalysis:
     def __init__(self):
+        self.title = ""
+        self.composer = ""
+        self.instrument = ""
         self.key = ""
         self.time_signature = ""
         self.tempo = 0
@@ -125,19 +130,38 @@ def analyze_technical_difficulty(score: stream.Score) -> float:
 @app.post("/analyze-sheet")
 async def analyze_sheet(file: UploadFile = File(...)) -> Dict:
     try:
-        # Criar arquivo temporário
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml') as temp_file:
+        # Detectar tipo de arquivo pelo sufixo
+        filename = file.filename.lower()
+        if filename.endswith('.pdf'):
+            suffix = '.pdf'
+        elif filename.endswith('.xml') or filename.endswith('.musicxml'):
+            suffix = '.xml'
+        elif filename.endswith('.midi') or filename.endswith('.mid'):
+            suffix = '.midi'
+        else:
+            raise HTTPException(status_code=400, detail="Formato de arquivo não suportado. Envie PDF, MusicXML ou MIDI.")
+
+        # Criar arquivo temporário com o sufixo correto
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             content = await file.read()
             temp_file.write(content)
             temp_file.flush()
-            
+
             # Carregar partitura com Music21
-            score = converter.parse(temp_file.name)
+            try:
+                score = converter.parse(temp_file.name)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Arquivo não suportado ou inválido: {str(e)}")
             
             # Realizar análise
             analysis = SheetAnalysis()
             
             # Análise básica
+            # Extração de metadados
+            analysis.title = score.metadata.title if score.metadata and score.metadata.title else ""
+            analysis.composer = score.metadata.composer if score.metadata and score.metadata.composer else ""
+            # Instrumento principal
+            analysis.instrument = score.parts[0].partName if score.parts and hasattr(score.parts[0], 'partName') and score.parts[0].partName else ""
             analysis.key = score.analyze('key').tonic.name
             analysis.time_signature = str(score.getTimeSignatures()[0])
             analysis.tempo = score.metronomeMarkBoundaries()[0][2].number
@@ -187,6 +211,9 @@ async def analyze_sheet(file: UploadFile = File(...)) -> Dict:
             os.unlink(temp_file.name)
             
             return {
+                "title": analysis.title,
+                "composer": analysis.composer,
+                "instrument": analysis.instrument,
                 "key": analysis.key,
                 "time_signature": analysis.time_signature,
                 "tempo": analysis.tempo,
@@ -205,8 +232,31 @@ async def analyze_sheet(file: UploadFile = File(...)) -> Dict:
                 "recommended_instruments": analysis.recommended_instruments
             }
             
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/profile")
+async def delete_profile(request: Request):
+    # Supondo que o usuário está autenticado via header Authorization: Bearer <token>
+    # e que o id do usuário está disponível no header ou via JWT (ajuste conforme sua autenticação)
+    user_id = request.headers.get("x-user-id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Usuário não autenticado")
+
+    # Deleta o perfil e o usuário (ON DELETE CASCADE cuida do resto)
+    SUPABASE_URL = os.environ.get("SUPABASE_URL")
+    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+    supabase.table("profiles").delete().eq("id", user_id).execute()
+    resp = supabase.table("users").delete().eq("id", user_id).execute()
+    if hasattr(resp, 'error') and resp.error:
+        raise HTTPException(status_code=400, detail=resp.error.message)
+    return {"ok": True}
+
+app.include_router(sheets_router)
 
 if __name__ == "__main__":
     import uvicorn

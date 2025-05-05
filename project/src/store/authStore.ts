@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { User, AuthError, Session } from '@supabase/supabase-js';
+import { useProfileStore } from './profileStore';
 
 // Interfaces e tipos
 interface ValidationResult {
@@ -24,6 +25,7 @@ interface AuthState {
   signOut: () => Promise<void>;
   setUser: (user: User | null) => void;
   checkEmailExists: (email: string) => Promise<boolean>;
+  handleGoogleCallback: () => Promise<void>;
 }
 
 // Funções de validação
@@ -204,7 +206,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     try {
       await supabase.auth.signOut();
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -215,16 +216,13 @@ export const useAuthStore = create<AuthState>((set) => ({
           }
         }
       });
-
       if (error) {
         console.error('Erro no login com Google:', error);
         handleAuthError(error);
       }
-
       if (!data?.url) {
         throw new Error('Não foi possível iniciar o login com Google');
       }
-
       window.location.href = data.url;
     } catch (error) {
       if (error instanceof Error) {
@@ -244,7 +242,40 @@ export const useAuthStore = create<AuthState>((set) => ({
       handleAuthError(error as AuthError);
     }
   },
-  setUser: (user) => set({ user })
+  setUser: (user) => set({ user }),
+  handleGoogleCallback: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+      set({ user });
+      // Buscar perfil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (profileError || !profile) {
+        // Criar perfil se não existir
+        await supabase.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        window.location.replace('/email-confirmation');
+        return;
+      }
+      // Se não tem username, precisa fazer setup
+      if (!profile.username) {
+        window.location.replace('/setup');
+        return;
+      }
+      // Se perfil está completo, vai para o app
+      window.location.replace('/app');
+    } catch (error) {
+      window.location.replace('/auth');
+    }
+  }
 }));
 
 // Inicializa o estado de autenticação

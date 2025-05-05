@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Factory } from 'vexflow';
+import Vex from 'vexflow';
 import { Box, Paper, Typography } from '@mui/material';
 
 interface ChordVisualizerProps {
@@ -14,30 +14,30 @@ const ChordVisualizer: React.FC<ChordVisualizerProps> = ({
   height = 100 
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const factoryRef = useRef<Factory.Renderer | null>(null);
+  const rendererRef = useRef<any>(null);
 
   useEffect(() => {
-    if (containerRef.current && !factoryRef.current) {
-      factoryRef.current = new Factory.Renderer(width, height);
+    if (containerRef.current && !rendererRef.current) {
+      rendererRef.current = new Vex.Flow.Renderer(
+        containerRef.current,
+        Vex.Flow.Renderer.Backends.SVG
+      );
     }
 
     const renderChord = () => {
-      if (!containerRef.current || !factoryRef.current) return;
+      if (!containerRef.current || !rendererRef.current) return;
 
-      const { factory } = factoryRef.current;
-      const context = factory.getContext();
-      
-      // Limpar o canvas
+      const context = rendererRef.current.getContext();
       context.clear();
-      
+
       // Criar a pauta
-      const stave = new factory.Stave(10, 0, width - 20);
+      const stave = new Vex.Flow.Stave(10, 0, width - 20);
       stave.addClef('treble');
       stave.setContext(context).draw();
 
       // Criar a nota
       const notes = [
-        new factory.StaveNote({
+        new Vex.Flow.StaveNote({
           clef: 'treble',
           keys: [chord],
           duration: 'q'
@@ -46,16 +46,16 @@ const ChordVisualizer: React.FC<ChordVisualizerProps> = ({
 
       // Adicionar acidente se necessário
       if (chord.includes('#')) {
-        notes[0].addAccidental(0, new factory.Accidental('#'));
+        notes[0].addAccidental(0, new Vex.Flow.Accidental('#'));
       } else if (chord.includes('b')) {
-        notes[0].addAccidental(0, new factory.Accidental('b'));
+        notes[0].addAccidental(0, new Vex.Flow.Accidental('b'));
       }
 
       // Criar a voz e formatar
-      const voice = new factory.Voice({ num_beats: 1, beat_value: 4 });
+      const voice = new Vex.Flow.Voice({ num_beats: 1, beat_value: 4 });
       voice.addTickables(notes);
 
-      new factory.Formatter().joinVoices([voice]).format([voice], width - 40);
+      new Vex.Flow.Formatter().joinVoices([voice]).format([voice], width - 40);
       voice.draw(context, stave);
     };
 

@@ -148,6 +148,32 @@ export default function Navigation() {
           </motion.div>
         ))}
       </List>
+      {user && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            borderRadius: 3,
+            p: 2,
+            mx: 2,
+            mt: 4,
+            mb: 2,
+          }}
+        >
+          <Avatar
+            src={user.user_metadata?.avatar_url || undefined}
+            alt={user.user_metadata?.name || user.email || 'User'}
+            sx={{ width: 48, height: 48, mr: 2, bgcolor: 'background.paper', color: 'primary.main', fontWeight: 700 }}
+          />
+          <Box>
+            <Typography sx={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.2 }} noWrap>
+              {user.email}
+            </Typography>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 

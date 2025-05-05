@@ -21,6 +21,10 @@ import {
   InputLabel,
   FormControl,
   MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -78,11 +82,13 @@ export default function Library() {
     sortBy: 'recent'
   });
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [userSheets, setUserSheets] = useState<MusicSheet[]>([]);
+  const [sheets, setSheets] = useState<MusicSheet[]>([]);
   const [likedSheets, setLikedSheets] = useState<MusicSheet[]>([]);
   const [downloadedSheets, setDownloadedSheets] = useState<MusicSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -92,14 +98,13 @@ export default function Library() {
       return () => { isMounted = false; };
     }
 
-    const fetchUserSheets = async () => {
+    const fetchSheets = async () => {
       if (!isMounted) return;
       setLoading(true);
       setError('');
       
       try {
-        // Buscar partituras do usuário
-        const { data: sheetData, error: sheetError } = await supabase
+        const { data, error } = await supabase
           .from('music_sheets')
           .select('*')
           .eq('user_id', user.id)
@@ -107,14 +112,13 @@ export default function Library() {
 
         if (!isMounted) return;
         
-        if (sheetError) {
-          console.error('Erro ao buscar partituras:', sheetError);
+        if (error) {
+          console.error('Erro ao buscar partituras:', error);
           setError('Ocorreu um erro ao carregar suas partituras. Por favor, tente novamente.');
           return;
         }
         
-        // Garantir que todos os campos opcionais existam com valores padrão
-        const sheetsWithDefaults = (sheetData || []).map(sheet => ({
+        const sheetsWithDefaults = (data || []).map(sheet => ({
           ...sheet,
           likes: sheet.likes || 0,
           downloads: sheet.downloads || 0,
@@ -122,15 +126,14 @@ export default function Library() {
           isLiked: false
         }));
         
-        setUserSheets(sheetsWithDefaults);
+        setSheets(sheetsWithDefaults);
 
-        // Buscar coleções do usuário (poderia ser implementado se a tabela existir)
         setCollections([
           {
             id: 1,
             name: 'Minhas Partituras',
             description: 'Todas as partituras que você criou',
-            sheets: sheetData?.length || 0,
+            sheets: data?.length || 0,
             isPublic: true,
           },
           {
@@ -142,12 +145,7 @@ export default function Library() {
           }
         ]);
 
-        // Buscar partituras curtidas (necessário implementar tabela de likes/favoritos)
-        // Por enquanto, usamos uma versão simulada
         setLikedSheets([]);
-
-        // Buscar partituras baixadas (necessário implementar tabela de downloads)
-        // Por enquanto, usamos uma versão simulada
         setDownloadedSheets([]);
         
       } catch (err) {
@@ -161,11 +159,17 @@ export default function Library() {
       }
     };
 
-    fetchUserSheets();
-    
-    // Cleanup function
-    return () => { 
-      isMounted = false; 
+    fetchSheets();
+
+    // Realtime: escuta mudanças na tabela
+    const channel = supabase
+      .channel('public:music_sheets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'music_sheets' }, fetchSheets)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      isMounted = false;
     };
   }, [user, navigate]);
 
@@ -283,7 +287,7 @@ export default function Library() {
       // Lógica para curtir uma partitura
       console.log('Curtir partitura:', sheetId);
       // Atualizar o estado local para feedback imediato
-      setUserSheets(prev => 
+      setSheets(prev => 
         prev.map(sheet => 
           sheet.id === sheetId 
             ? { ...sheet, isLiked: !sheet.isLiked, likes: sheet.isLiked ? (sheet.likes || 1) - 1 : (sheet.likes || 0) + 1 } 
@@ -322,6 +326,28 @@ export default function Library() {
   const handleSheetClick = (sheetId: string) => {
     // Navegar para a página de detalhes da partitura
     navigate(`/sheet/${sheetId}`);
+  };
+
+  const handleRequestDelete = (sheetId: string) => {
+    setDeleteId(sheetId);
+  };
+
+  const handleDeleteSheet = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase
+      .from('music_sheets')
+      .delete()
+      .eq('id', deleteId);
+    if (error) {
+      setErrorMsg('Erro ao excluir partitura: ' + (error.message || 'Tente novamente.'));
+    } else {
+      // Remove do estado local
+      setSheets(prev => prev.filter(sheet => sheet.id !== deleteId));
+      setLikedSheets(prev => prev.filter(sheet => sheet.id !== deleteId));
+      setDownloadedSheets(prev => prev.filter(sheet => sheet.id !== deleteId));
+      setErrorMsg('Partitura excluída com sucesso!');
+    }
+    setDeleteId(null);
   };
 
   return (
@@ -476,7 +502,7 @@ export default function Library() {
 
             <TabPanel value={tabValue} index={1}>
               <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap' }}>
-                {filteredSheets(userSheets).length === 0 ? (
+                {filteredSheets(sheets).length === 0 ? (
                   <Box sx={{ flex: 1 }}>
                     <Box textAlign="center" py={4}>
                       <Typography variant="h6" color="text.secondary">
@@ -506,7 +532,7 @@ export default function Library() {
                     </Box>
                   </Box>
                 ) : (
-                  filteredSheets(userSheets).map((sheet) => (
+                  filteredSheets(sheets).map((sheet) => (
                     <Box sx={{ flex: '1 1 300px' }} key={sheet.id}>
                       <MusicSheetCard
                         sheetId={sheet.id}
@@ -528,6 +554,8 @@ export default function Library() {
                         onPlay={() => handlePlay(sheet.id)}
                         onComment={() => handleComment(sheet.id)}
                         onClick={() => handleSheetClick(sheet.id)}
+                        isOwner={user?.id === sheet.user_id}
+                        onDelete={() => handleRequestDelete(sheet.id)}
                       />
                     </Box>
                   ))
@@ -589,6 +617,8 @@ export default function Library() {
                         onPlay={() => handlePlay(sheet.id)}
                         onComment={() => handleComment(sheet.id)}
                         onClick={() => handleSheetClick(sheet.id)}
+                        isOwner={user?.id === sheet.user_id}
+                        onDelete={() => handleRequestDelete(sheet.id)}
                       />
                     </Box>
                   ))
@@ -650,6 +680,8 @@ export default function Library() {
                         onPlay={() => handlePlay(sheet.id)}
                         onComment={() => handleComment(sheet.id)}
                         onClick={() => handleSheetClick(sheet.id)}
+                        isOwner={user?.id === sheet.user_id}
+                        onDelete={() => handleRequestDelete(sheet.id)}
                       />
                     </Box>
                   ))
@@ -659,6 +691,21 @@ export default function Library() {
           </Stack>
         )}
       </Stack>
+      <Dialog open={!!deleteId} onClose={() => setDeleteId(null)}>
+        <DialogTitle>Excluir partitura</DialogTitle>
+        <DialogContent>
+          Tem certeza que deseja excluir esta partitura?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteId(null)}>Cancelar</Button>
+          <Button onClick={handleDeleteSheet} color="error" variant="contained">Excluir</Button>
+        </DialogActions>
+      </Dialog>
+      {errorMsg && (
+        <Alert severity="error" onClose={() => setErrorMsg('')} sx={{ mt: 2 }}>
+          {errorMsg}
+        </Alert>
+      )}
     </Container>
   );
 } 

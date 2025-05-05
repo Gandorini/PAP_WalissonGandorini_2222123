@@ -17,6 +17,8 @@ const Library = React.lazy(() => import('./pages/Library'));
 const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
 const Playlists = React.lazy(() => import('./pages/Playlists'));
 const PlaylistDetails = React.lazy(() => import('./pages/PlaylistDetails'));
+const EmailConfirmation = React.lazy(() => import('./pages/EmailConfirmation'));
+const InitialSetup = React.lazy(() => import('./pages/InitialSetup'));
 
 const LoadingFallback = () => (
   <Box
@@ -43,6 +45,22 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return !user ? children : <Navigate to="/app" replace />;
 };
 
+// Rota para setup inicial (após confirmação de email)
+const SetupRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuthStore();
+  // Aqui você pode adicionar lógica para checar se o perfil está incompleto
+  // Por exemplo, buscar o profile e checar se username está preenchido
+  // Para simplificação, vamos assumir que se o user existe, pode acessar o setup
+  return user ? children : <Navigate to="/auth" replace />;
+};
+
+// Rota para confirmação de email
+const EmailConfirmationRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuthStore();
+  // Se não tem user, volta para login
+  return user ? children : <Navigate to="/auth" replace />;
+};
+
 export default function AppRoutes() {
   const { user } = useAuthStore();
 
@@ -52,9 +70,9 @@ export default function AppRoutes() {
         {/* Rotas Públicas */}
         <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
         <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-        
-        {/* Rota de callback de autenticação */}
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/email-confirmation" element={<EmailConfirmationRoute><EmailConfirmation /></EmailConfirmationRoute>} />
+        <Route path="/setup" element={<SetupRoute><InitialSetup /></SetupRoute>} />
 
         {/* Rotas Privadas (com Layout) */}
         <Route path="/app" element={<PrivateRoute><Home /></PrivateRoute>} />
