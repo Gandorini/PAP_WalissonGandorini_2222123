@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
-import { localConversionService } from '../services/localConversionService';
 import { sheetAnalysisService } from '../services/sheetAnalysisService';
 import { advancedAnalysisService } from '../services/advancedAnalysisService';
 import { 
@@ -48,48 +47,13 @@ import {
 import { motion } from 'framer-motion';
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
 import ChordVisualizer from '../components/ChordVisualizer';
+import Tesseract from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// Componente para exibir o status da conversão
-const ConversionStatus = ({ status }: { status: 'pending' | 'processing' | 'completed' | 'failed' | null }) => {
-  if (!status) return null;
-
-  let message = '';
-  let color = '';
-  
-  switch (status) {
-    case 'pending':
-      message = 'Aguardando conversão para MEI...';
-      color = 'info.main';
-      break;
-    case 'processing':
-      message = 'Convertendo partitura para MEI...';
-      color = 'warning.main';
-      break;
-    case 'completed':
-      message = 'Conversão para MEI concluída!';
-      color = 'success.main';
-      break;
-    case 'failed':
-      message = 'Falha na conversão para MEI. Tente novamente.';
-      color = 'error.main';
-      break;
-  }
-  
-  return (
-    <Box sx={{ mt: 2, mb: 2 }}>
-      <Stack direction="row" spacing={1} alignItems="center">
-        {status === 'processing' && <CircularProgress size={16} />}
-        <Typography variant="body2" color={color}>
-          {message}
-        </Typography>
-      </Stack>
-    </Box>
-  );
-};
-
-// Tamanho máximo do arquivo em bytes (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+// Configuração do worker do PDF.js usando CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 const Upload = () => {
   const theme = useTheme();
@@ -107,7 +71,6 @@ const Upload = () => {
     scales: [] as string[],
     file: null as File | null,
     midiFile: null as File | null,
-    conversionStatus: null as 'pending' | 'processing' | 'completed' | 'failed' | null,
   });
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -281,82 +244,89 @@ const Upload = () => {
     }
   };
 
+  const validFileTypes = ['pdf', 'png', 'jpg', 'jpeg', 'svg'];
+
+  // Função para detectar padrões de partitura, cifra ou tablatura no texto extraído
+  function isMusicSheetOrTab(text: string): boolean {
+    const patterns = [
+      // Partituras: compassos, andamentos, dinâmicas, símbolos, abreviações
+      /\b(4\/4|3\/4|2\/4|6\/8|12\/8|alla breve|C)\b/i,
+      /\b(Allegro|Andante|Presto|Moderato|Largo|Vivace|Lento|Adagio|Grave|Rit\.?|Accel\.?|A tempo)\b/i,
+      /\b(ppp|pp|p|mp|mf|f|ff|fff|sfz|cresc\.?|dim\.?|rit\.?|a tempo)\b/i,
+      /\b(Fermata|Slur|Tie|Staccato|Legato|Accent|Marcato|Trill|Mordent|Appoggiatura|Grace note|Repeat|Fine|Da Capo|D\.C\.|D\.S\.|Coda|Segno|Staff|Clef|Key|Time|Bar|Measure|Note|Rest)\b/i,
+      // Tablaturas: linhas de cordas, técnicas, padrões de pelo menos 4 linhas
+      /((e|B|G|D|A|E)\|[-0-9xXhHpPsS\/\\()|=~btrPMpm]+\n?){4,}/g,
+      /EADGBE/i,
+      /[0-9]{1,2}[-xXhHpPsS\/\\()|=~btrPMpm]{2,}/g,
+      // Cifras: acordes, variações, baixo invertido, sequências
+      /\b([A-G](#|b)?(m|maj|min|sus|dim|aug|add|m7|maj7|7|9|11|13)?(\/[A-G](#|b)?)?)\b/g,
+      /\[([A-G][#b]?m?(maj7|m7|7|sus4|sus2|dim|aug|add9)?(\/[A-G][#b]?)?)\]/g,
+      /([A-G][#b]?m?(maj7|m7|7|sus4|sus2|dim|aug|add9)?\s+){2,}/g, // Sequência de acordes
+      // Palavras em outros idiomas
+      /\b(partitura|compasso|clave|notação|nota|pentagrama|compás|clave|notación|partition|mesure|clé|note|battuta|chiave|nota)\b/i
+    ];
+    // Se encontrar pelo menos 2 padrões diferentes, é mais confiável
+    let matches = 0;
+    for (const pattern of patterns) {
+      if (pattern.test(text)) matches++;
+    }
+    return matches >= 2;
+  }
+
+  // Validação local usando OCR para imagens e PDFs
+  async function validateMusicFile(file: File): Promise<{ isScore: boolean, error: string }> {
+    let text = '';
+    try {
+      if (file.type === 'application/pdf') {
+        // Renderizar primeira página do PDF como imagem
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext('2d');
+        await page.render({ canvasContext: context!, viewport }).promise;
+        // OCR na imagem da página
+        const result = await Tesseract.recognize(canvas, 'eng', { logger: m => console.log(m) });
+        text = result.data.text;
+      } else if (file.type.startsWith('image/')) {
+        // OCR direto na imagem
+        const result = await Tesseract.recognize(file, 'eng', { logger: m => console.log(m) });
+        text = result.data.text;
+      } else {
+        return { isScore: false, error: 'Tipo de arquivo não suportado.' };
+      }
+      const isValid = isMusicSheetOrTab(text);
+      return {
+        isScore: isValid,
+        error: isValid ? '' : 'Arquivo não contém notação musical válida (partitura, cifra ou tablatura).'
+      };
+    } catch (err: any) {
+      return { isScore: false, error: 'Erro ao analisar arquivo: ' + err.message };
+    }
+  }
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, fileType: 'sheet' | 'midi') => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      
-      if (fileType === 'sheet') {
-        try {
-          // Verificar extensão de arquivo
-          const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
-          const validFileTypes = ['xml', 'musicxml', 'mxl', 'svg', 'pdf', 'mid', 'midi'];
-          
-          if (!fileExt || !validFileTypes.includes(fileExt)) {
-            setError(`Tipo de arquivo não suportado. Apenas MusicXML, SVG, PDF e MIDI são aceitos.`);
-            return;
-          }
-          
-          // Verificar tamanho
-          if (selectedFile.size > MAX_FILE_SIZE) {
-            setError(`O arquivo excede o tamanho máximo permitido (5MB).`);
-            return;
-          }
-
-          // Enviar para o backend para análise automática
-          const formDataBackend = new FormData();
-          formDataBackend.append('file', selectedFile);
+      setFormData({ ...formData, file: selectedFile });
           setIsLoading(true);
-          setValidationMessage('Analisando arquivo...');
+      setValidationMessage('Validando arquivo...');
           setIsValidFile(null);
           setError('');
           
-          const response = await fetch('http://localhost:8000/analyze-sheet', {
-            method: 'POST',
-            body: formDataBackend
-          });
-          const analysis = await response.json();
+      // Validação local robusta
+      const validationResult = await validateMusicFile(selectedFile);
           setIsLoading(false);
-          if (!response.ok) {
-            setError(analysis.detail || 'Erro ao analisar arquivo.');
-              setIsValidFile(false);
-            setValidationMessage('Arquivo inválido ou não suportado.');
-              return;
-            }
 
-          // Preencher automaticamente os campos do formulário
-            setFormData(prev => ({
-              ...prev,
-              file: selectedFile,
-            title: analysis.title || prev.title,
-            composer: analysis.composer || prev.composer,
-            instrument: analysis.instrument || prev.instrument,
-            difficulty: analysis.difficulty || prev.difficulty,
-            scales: analysis.scales || prev.scales,
-              tags: [...new Set([
-                ...prev.tags,
-              ...(analysis.chords || []),
-              ...(analysis.expression_markers || []),
-              ...(analysis.dynamics || []),
-              ...(analysis.articulations || [])
-              ])]
-            }));
+      if (validationResult.isScore) {
+        setValidationMessage('Arquivo validado como partitura/cifra!');
             setIsValidFile(true);
-          setValidationMessage('Arquivo analisado e campos preenchidos automaticamente!');
-          setChordVisualization(analysis.chords || []);
-        } catch (error) {
-          console.error('Erro ao validar/analisar arquivo:', error);
-          setError('Erro ao processar o arquivo. Por favor, tente novamente.');
-          setIsValidFile(false);
-          setValidationMessage('Erro na validação do arquivo.');
-          setIsLoading(false);
-        }
       } else {
-        // Validação do arquivo MIDI
-        if (selectedFile.size > MAX_FILE_SIZE) {
-          setError(`O arquivo MIDI excede o tamanho máximo permitido (5MB).`);
-          return;
-        }
-        setFormData(prev => ({ ...prev, midiFile: selectedFile }));
+        setValidationMessage(validationResult.error || 'Arquivo não é uma partitura/cifra reconhecida.');
+          setIsValidFile(false);
       }
     }
   };
@@ -505,7 +475,6 @@ const Upload = () => {
         midi_url: midiUrl,
         file_type: fileType,
         user_id: user.id,
-        conversion_status: 'completed',
         mei_url: null
       };
       
@@ -534,7 +503,6 @@ const Upload = () => {
         scales: [],
         file: null,
         midiFile: null,
-        conversionStatus: null,
       });
       
       setUploadProgress(100);
@@ -583,6 +551,27 @@ const Upload = () => {
   ];
 
   const [chordVisualization, setChordVisualization] = useState<string[] | null>(null);
+
+  // Suprimir erros do worker do PDF.js
+  useEffect(() => {
+    const originalConsoleError = window.console.error;
+    window.console.error = function (...args) {
+      if (
+        typeof args[0] === 'string' &&
+        (args[0].includes('Setting up fake worker failed') ||
+         args[0].includes('No "GlobalWorkerOptions.workerSrc" specified') ||
+         args[0].includes('The API version') ||
+         args[0].includes('Failed to fetch dynamically imported module'))
+      ) {
+        // Não mostrar erro do worker
+        return;
+      }
+      originalConsoleError.apply(window.console, args);
+    };
+    return () => {
+      window.console.error = originalConsoleError;
+    };
+  }, []);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -755,17 +744,17 @@ const Upload = () => {
                         <Select
                           labelId="scales-label"
                           multiple
-                          value={formData.scales}
+                          value={Array.isArray(formData.scales) ? formData.scales : []}
                           label="Escalas/Tonalidades"
                           onChange={(e) => setFormData({
                             ...formData,
-                            scales: e.target.value as string[]
+                            scales: Array.isArray(e.target.value) ? e.target.value : [e.target.value]
                           })}
                           renderValue={(selected) => (
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {(selected as string[]).map((value) => (
+                              {Array.isArray(selected) ? selected.map((value) => (
                                 <Chip key={value} label={value} size="small" />
-                              ))}
+                              )) : null}
                             </Box>
                           )}
                         >
@@ -797,7 +786,7 @@ const Upload = () => {
                     color="primary"
                     size="large"
                     fullWidth
-                    disabled={loading || !formData.file || (!isValidFile && formData.file?.type !== 'application/pdf')}
+                    disabled={loading || !formData.file || isValidFile !== true}
                     startIcon={loading ? <CircularProgress size={24} color="inherit" /> : <CloudUpload />}
                     sx={{ 
                       mt: 2, 
@@ -812,6 +801,17 @@ const Upload = () => {
                   >
                     {loading ? 'Enviando...' : 'Enviar Partitura'}
                   </Button>
+                  
+                  {isValidFile === false && (
+                    <Alert 
+                      severity="error"
+                      sx={{ mt: 2, borderRadius: 2 }}
+                    >
+                      {formData.file?.type === 'application/pdf'
+                        ? 'Não foi possível validar automaticamente a notação musical neste PDF. Confira o preview antes de enviar.'
+                        : validationMessage || 'Arquivo não é uma partitura reconhecida.'}
+                    </Alert>
+                  )}
                   
                   {loading && (
                     <Box sx={{ width: '100%', mt: 2 }}>
@@ -893,7 +893,7 @@ const Upload = () => {
                         type="file"
                         ref={fileInputRef}
                         style={{ display: 'none' }}
-                        accept=".xml,.musicxml,.mxl,.pdf,.svg"
+                        accept=".pdf,.png,.jpg,.jpeg,.svg"
                         onChange={(e) => handleFileChange(e, 'sheet')}
                       />
                       
@@ -949,7 +949,7 @@ const Upload = () => {
                             ou clique para selecionar
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-                            Formatos aceitos: MusicXML (.xml, .musicxml, .mxl), PDF, SVG
+                            Formatos aceitos: PDF, PNG, JPG, JPEG, SVG
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                             Tamanho máximo: 5MB
@@ -1013,8 +1013,6 @@ const Upload = () => {
                         </Paper>
                       </Box>
                     )}
-                    
-                    <ConversionStatus status={formData.conversionStatus} />
                   </Box>
                 )}
                 
@@ -1059,38 +1057,64 @@ const Upload = () => {
                     ) : formData.file && previewUrl ? (
                       formData.file.type === 'application/pdf' ? (
                         <Box sx={{ 
-                          flex: 1,
-                          height: '100%',
-                          width: '100%',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          '& iframe': {
                             width: '100%',
                             height: '100%',
-                            border: 'none',
-                            display: 'block'
-                          }
+                          minHeight: '600px',
+                          minWidth: 0,
+                          flex: 1,
+                          position: 'relative',
+                          overflow: 'auto',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'flex-start',
+                          p: 0,
+                          m: 0,
                         }}>
                           <iframe
-                            src={previewUrl + '#zoom=FitH'}
+                            src={previewUrl}
+                            title="PDF Preview"
                             style={{
                               width: '100%',
                               height: '100%',
+                              minHeight: '600px',
                               border: 'none',
-                              display: 'block'
+                              display: 'block',
+                              margin: 0,
+                              padding: 0,
+                              background: '#222'
                             }}
-                            title="PDF Preview"
                           />
                         </Box>
                       ) : (
-                        <Box 
-                          ref={osmdRef} 
-                          sx={{ 
+                        <Box sx={{
+                          width: '100%',
+                          height: '100%',
+                          minHeight: '600px',
+                          minWidth: 0,
                             flex: 1, 
-                            overflowY: 'auto', 
-                            p: 2
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#222',
+                          p: 0,
+                          m: 0,
+                        }}>
+                          <img
+                            src={previewUrl}
+                            alt="Pré-visualização"
+                            style={{
+                              width: 'auto',
+                              height: '100%',
+                              maxWidth: '100%',
+                              objectFit: 'contain',
+                              borderRadius: 8,
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                              margin: 0,
+                              padding: 0
                           }}
                         />
+                        </Box>
                       )
                     ) : (
                       <Box 
@@ -1123,6 +1147,13 @@ const Upload = () => {
                 <ChordVisualizer key={index} chord={chord} />
               ))}
             </Box>
+          </Box>
+        )}
+
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: 2 }}>
+            <CircularProgress />
+            <Typography sx={{ ml: 2 }}>Analisando arquivo...</Typography>
           </Box>
         )}
       </motion.div>

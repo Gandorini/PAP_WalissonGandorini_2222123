@@ -8,13 +8,16 @@ from typing import Dict, List, Optional
 import numpy as np
 from sheets_crud import router as sheets_router
 from supabase import create_client
+from PyPDF2 import PdfReader
+from PIL import Image
+import pytesseract
 
 app = FastAPI()
 
-# Configurar CORS
+# Configurar CORS (deve ser antes de tudo)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -126,116 +129,6 @@ def analyze_technical_difficulty(score: stream.Score) -> float:
     )
     
     return min(max(difficulty, 0), 1)
-
-@app.post("/analyze-sheet")
-async def analyze_sheet(file: UploadFile = File(...)) -> Dict:
-    try:
-        # Detectar tipo de arquivo pelo sufixo
-        filename = file.filename.lower()
-        if filename.endswith('.pdf'):
-            suffix = '.pdf'
-        elif filename.endswith('.xml') or filename.endswith('.musicxml'):
-            suffix = '.xml'
-        elif filename.endswith('.midi') or filename.endswith('.mid'):
-            suffix = '.midi'
-        else:
-            raise HTTPException(status_code=400, detail="Formato de arquivo não suportado. Envie PDF, MusicXML ou MIDI.")
-
-        # Criar arquivo temporário com o sufixo correto
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            content = await file.read()
-            temp_file.write(content)
-            temp_file.flush()
-
-            # Carregar partitura com Music21
-            try:
-                score = converter.parse(temp_file.name)
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Arquivo não suportado ou inválido: {str(e)}")
-            
-            # Realizar análise
-            analysis = SheetAnalysis()
-            
-            # Análise básica
-            # Extração de metadados
-            analysis.title = score.metadata.title if score.metadata and score.metadata.title else ""
-            analysis.composer = score.metadata.composer if score.metadata and score.metadata.composer else ""
-            # Instrumento principal
-            analysis.instrument = score.parts[0].partName if score.parts and hasattr(score.parts[0], 'partName') and score.parts[0].partName else ""
-            analysis.key = score.analyze('key').tonic.name
-            analysis.time_signature = str(score.getTimeSignatures()[0])
-            analysis.tempo = score.metronomeMarkBoundaries()[0][2].number
-            analysis.notes = len(score.getElementsByClass('Note'))
-            analysis.measures = len(score.getElementsByClass('Measure'))
-            
-            # Análise de acordes
-            for chord in score.getElementsByClass('Chord'):
-                analysis.chords.append(chord.pitchedCommonName)
-            
-            # Análise de escalas
-            for scale in score.getElementsByClass('Scale'):
-                analysis.scales.append(scale.name)
-            
-            # Análises avançadas
-            analysis.melody_contour = analyze_melody_contour(score)
-            analysis.rhythm_complexity = calculate_rhythm_complexity(score)
-            analysis.harmonic_complexity = analyze_harmonic_complexity(score)
-            analysis.technical_difficulty = analyze_technical_difficulty(score)
-            analysis.expression_markers = detect_expression_markers(score)
-            
-            # Análise de dinâmicas
-            for dynamic in score.getElementsByClass('Dynamic'):
-                analysis.dynamics.append(dynamic.value)
-            
-            # Análise de articulações
-            for articulation in score.getElementsByClass('Articulation'):
-                analysis.articulations.append(articulation.name)
-            
-            # Recomendar instrumentos baseado na análise
-            if analysis.technical_difficulty < 0.3:
-                analysis.recommended_instruments = ['Piano', 'Flauta', 'Violino']
-            elif analysis.technical_difficulty < 0.6:
-                analysis.recommended_instruments = ['Piano', 'Violino', 'Guitarra', 'Saxofone']
-            else:
-                analysis.recommended_instruments = ['Piano', 'Violino', 'Guitarra', 'Saxofone', 'Trompete']
-            
-            # Determinar dificuldade
-            if analysis.technical_difficulty < 0.3:
-                analysis.difficulty = "beginner"
-            elif analysis.technical_difficulty < 0.6:
-                analysis.difficulty = "intermediate"
-            else:
-                analysis.difficulty = "advanced"
-            
-            # Limpar arquivo temporário
-            os.unlink(temp_file.name)
-            
-            return {
-                "title": analysis.title,
-                "composer": analysis.composer,
-                "instrument": analysis.instrument,
-                "key": analysis.key,
-                "time_signature": analysis.time_signature,
-                "tempo": analysis.tempo,
-                "difficulty": analysis.difficulty,
-                "notes": analysis.notes,
-                "measures": analysis.measures,
-                "chords": list(set(analysis.chords)),
-                "scales": list(set(analysis.scales)),
-                "melody_contour": analysis.melody_contour,
-                "rhythm_complexity": float(analysis.rhythm_complexity),
-                "harmonic_complexity": float(analysis.harmonic_complexity),
-                "technical_difficulty": float(analysis.technical_difficulty),
-                "expression_markers": analysis.expression_markers,
-                "dynamics": list(set(analysis.dynamics)),
-                "articulations": list(set(analysis.articulations)),
-                "recommended_instruments": analysis.recommended_instruments
-            }
-            
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/profile")
 async def delete_profile(request: Request):
