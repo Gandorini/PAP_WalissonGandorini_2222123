@@ -19,19 +19,42 @@
   --message-bar-close-button-color-hover:var(--text-primary-color);
   --message-bar-close-button-border-radius:4px;
   --message-bar-close-button-border:none;
-  --message-bar-close-button-hover-bg-color:rgb(21 20 26 / 0.14);
-  --message-bar-close-button-active-bg-color:rgb(21 20 26 / 0.21);
-  --message-bar-close-button-focus-bg-color:rgb(21 20 26 / 0.07);
+  --csstools-light-dark-toggle--0:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.14);
+  --message-bar-close-button-hover-bg-color:var(--csstools-light-dark-toggle--0, rgb(21 20 26 / 0.14));
+  --csstools-light-dark-toggle--1:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.21);
+  --message-bar-close-button-active-bg-color:var(--csstools-light-dark-toggle--1, rgb(21 20 26 / 0.21));
+  --csstools-light-dark-toggle--2:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.07);
+  --message-bar-close-button-focus-bg-color:var(--csstools-light-dark-toggle--2, rgb(21 20 26 / 0.07));
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
 .messageBar{
-    --message-bar-close-button-hover-bg-color:rgb(251 251 254 / 0.14);
-    --message-bar-close-button-active-bg-color:rgb(251 251 254 / 0.21);
-    --message-bar-close-button-focus-bg-color:rgb(251 251 254 / 0.07);
+  --message-bar-close-button-hover-bg-color:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(251 251 254 / 0.14)
+  );
+  --message-bar-close-button-active-bg-color:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(251 251 254 / 0.21)
+  );
+  --message-bar-close-button-focus-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(251 251 254 / 0.07)
+  );
 }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.messageBar *{
+  --csstools-light-dark-toggle--0:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.14);
+  --message-bar-close-button-hover-bg-color:var(--csstools-light-dark-toggle--0, rgb(21 20 26 / 0.14));
+  --csstools-light-dark-toggle--1:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.21);
+  --message-bar-close-button-active-bg-color:var(--csstools-light-dark-toggle--1, rgb(21 20 26 / 0.21));
+  --csstools-light-dark-toggle--2:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.07);
+  --message-bar-close-button-focus-bg-color:var(--csstools-light-dark-toggle--2, rgb(21 20 26 / 0.07));
   }
+}
 
 @media screen and (forced-colors: active){
 
@@ -142,41 +165,97 @@
     }
 
 #editorUndoBar{
-  --text-primary-color:#15141a;
+  --csstools-light-dark-toggle--3:var(--csstools-color-scheme--light) #fbfbfe;
+  --text-primary-color:var(--csstools-light-dark-toggle--3, #15141a);
 
-  --message-bar-icon:url(images/secondaryToolbarButton-documentProperties.svg);
-  --message-bar-icon-color:#0060df;
-  --message-bar-bg-color:#deeafc;
+  --message-bar-icon:url(images/messageBar_info.svg);
+  --csstools-light-dark-toggle--4:var(--csstools-color-scheme--light) #73a7f3;
+  --message-bar-icon-color:var(--csstools-light-dark-toggle--4, #0060df);
+  --csstools-light-dark-toggle--5:var(--csstools-color-scheme--light) #003070;
+  --message-bar-bg-color:var(--csstools-light-dark-toggle--5, #deeafc);
   --message-bar-fg-color:var(--text-primary-color);
-  --message-bar-border-color:rgb(0 0 0 / 0.08);
+  --csstools-light-dark-toggle--6:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
+  --message-bar-border-color:var(--csstools-light-dark-toggle--6, rgb(0 0 0 / 0.08));
 
-  --undo-button-bg-color:rgb(21 20 26 / 0.07);
-  --undo-button-bg-color-hover:rgb(21 20 26 / 0.14);
-  --undo-button-bg-color-active:rgb(21 20 26 / 0.21);
+  --csstools-light-dark-toggle--7:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
 
-  --undo-button-border:1px solid #0060df;
+  --undo-button-bg-color:var(--csstools-light-dark-toggle--7, rgb(21 20 26 / 0.07));
+  --csstools-light-dark-toggle--8:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.14);
+  --undo-button-bg-color-hover:var(--csstools-light-dark-toggle--8, rgb(21 20 26 / 0.14));
+  --csstools-light-dark-toggle--9:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.21);
+  --undo-button-bg-color-active:var(--csstools-light-dark-toggle--9, rgb(21 20 26 / 0.21));
+
+  --csstools-light-dark-toggle--10:var(--csstools-color-scheme--light) #0df;
+
+  --undo-button-border:1px solid var(--csstools-light-dark-toggle--10, #0060df);
 
   --undo-button-fg-color:var(--message-bar-fg-color);
   --undo-button-fg-color-hover:var(--undo-button-fg-color);
   --undo-button-fg-color-active:var(--undo-button-fg-color);
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 #editorUndoBar{
-    --text-primary-color:#fbfbfe;
-
-    --message-bar-icon-color:#73a7f3;
-    --message-bar-bg-color:#003070;
-    --message-bar-border-color:rgb(255 255 255 / 0.08);
-
-    --undo-button-bg-color:rgb(255 255 255 / 0.08);
-    --undo-button-bg-color-hover:rgb(255 255 255 / 0.14);
-    --undo-button-bg-color-active:rgb(255 255 255 / 0.21);
-
-    --undo-button-border:1px solid #0df;
+  --text-primary-color:light-dark(#15141a, #fbfbfe);
+  --message-bar-icon-color:light-dark(#0060df, #73a7f3);
+  --message-bar-bg-color:light-dark(#deeafc, #003070);
 }
+}
+
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
+#editorUndoBar{
+  --message-bar-border-color:light-dark(
+    rgb(0 0 0 / 0.08),
+    rgb(255 255 255 / 0.08)
+  );
+
+  --undo-button-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(255 255 255 / 0.08)
+  );
+  --undo-button-bg-color-hover:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(255 255 255 / 0.14)
+  );
+  --undo-button-bg-color-active:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(255 255 255 / 0.21)
+  );
+}
+}
+
+@supports (color: light-dark(red, red)){
+#editorUndoBar{
+
+  --undo-button-border:1px solid light-dark(#0060df, #0df);
+}
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+#editorUndoBar *{
+  --csstools-light-dark-toggle--3:var(--csstools-color-scheme--light) #fbfbfe;
+  --text-primary-color:var(--csstools-light-dark-toggle--3, #15141a);
+  --csstools-light-dark-toggle--4:var(--csstools-color-scheme--light) #73a7f3;
+  --message-bar-icon-color:var(--csstools-light-dark-toggle--4, #0060df);
+  --csstools-light-dark-toggle--5:var(--csstools-color-scheme--light) #003070;
+  --message-bar-bg-color:var(--csstools-light-dark-toggle--5, #deeafc);
+  --csstools-light-dark-toggle--6:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
+  --message-bar-border-color:var(--csstools-light-dark-toggle--6, rgb(0 0 0 / 0.08));
+
+  --csstools-light-dark-toggle--7:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
+
+  --undo-button-bg-color:var(--csstools-light-dark-toggle--7, rgb(21 20 26 / 0.07));
+  --csstools-light-dark-toggle--8:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.14);
+  --undo-button-bg-color-hover:var(--csstools-light-dark-toggle--8, rgb(21 20 26 / 0.14));
+  --csstools-light-dark-toggle--9:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.21);
+  --undo-button-bg-color-active:var(--csstools-light-dark-toggle--9, rgb(21 20 26 / 0.21));
+
+  --csstools-light-dark-toggle--10:var(--csstools-color-scheme--light) #0df;
+
+  --undo-button-border:1px solid var(--csstools-light-dark-toggle--10, #0060df);
   }
+}
 
 @media screen and (forced-colors: active){
 
@@ -248,80 +327,192 @@
   }
 
 .dialog{
-  --dialog-bg-color:white;
-  --dialog-border-color:white;
-  --dialog-shadow:0 2px 14px 0 rgb(58 57 68 / 0.2);
-  --text-primary-color:#15141a;
-  --text-secondary-color:#5b5b66;
+  --csstools-light-dark-toggle--11:var(--csstools-color-scheme--light) #1c1b22;
+  --dialog-bg-color:var(--csstools-light-dark-toggle--11, white);
+  --csstools-light-dark-toggle--12:var(--csstools-color-scheme--light) #1c1b22;
+  --dialog-border-color:var(--csstools-light-dark-toggle--12, white);
+  --csstools-light-dark-toggle--13:var(--csstools-color-scheme--light) #15141a;
+  --dialog-shadow:0 2px 14px 0 var(--csstools-light-dark-toggle--13, rgb(58 57 68 / 0.2));
+  --csstools-light-dark-toggle--14:var(--csstools-color-scheme--light) #fbfbfe;
+  --text-primary-color:var(--csstools-light-dark-toggle--14, #15141a);
+  --csstools-light-dark-toggle--15:var(--csstools-color-scheme--light) #cfcfd8;
+  --text-secondary-color:var(--csstools-light-dark-toggle--15, #5b5b66);
   --hover-filter:brightness(0.9);
-  --link-fg-color:#0060df;
-  --link-hover-fg-color:#0250bb;
-  --separator-color:#f0f0f4;
+  --csstools-light-dark-toggle--16:var(--csstools-color-scheme--light) #0df;
+  --link-fg-color:var(--csstools-light-dark-toggle--16, #0060df);
+  --csstools-light-dark-toggle--17:var(--csstools-color-scheme--light) #80ebff;
+  --link-hover-fg-color:var(--csstools-light-dark-toggle--17, #0250bb);
+  --csstools-light-dark-toggle--18:var(--csstools-color-scheme--light) #52525e;
+  --separator-color:var(--csstools-light-dark-toggle--18, #f0f0f4);
 
   --textarea-border-color:#8f8f9d;
-  --textarea-bg-color:white;
+  --csstools-light-dark-toggle--19:var(--csstools-color-scheme--light) #42414d;
+  --textarea-bg-color:var(--csstools-light-dark-toggle--19, white);
   --textarea-fg-color:var(--text-secondary-color);
 
-  --radio-bg-color:#f0f0f4;
-  --radio-checked-bg-color:#fbfbfe;
-  --radio-border-color:#8f8f9d;
-  --radio-checked-border-color:#0060df;
+  --csstools-light-dark-toggle--20:var(--csstools-color-scheme--light) #2b2a33;
 
-  --button-secondary-bg-color:rgb(21 20 26 / 0.07);
+  --radio-bg-color:var(--csstools-light-dark-toggle--20, #f0f0f4);
+  --csstools-light-dark-toggle--21:var(--csstools-color-scheme--light) #15141a;
+  --radio-checked-bg-color:var(--csstools-light-dark-toggle--21, #fbfbfe);
+  --radio-border-color:#8f8f9d;
+  --csstools-light-dark-toggle--22:var(--csstools-color-scheme--light) #0df;
+  --radio-checked-border-color:var(--csstools-light-dark-toggle--22, #0060df);
+
+  --csstools-light-dark-toggle--23:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.07);
+
+  --button-secondary-bg-color:var(--csstools-light-dark-toggle--23, rgb(21 20 26 / 0.07));
   --button-secondary-fg-color:var(--text-primary-color);
   --button-secondary-border-color:var(--button-secondary-bg-color);
-  --button-secondary-active-bg-color:rgb(21 20 26 / 0.21);
+  --csstools-light-dark-toggle--24:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.21);
+  --button-secondary-active-bg-color:var(--csstools-light-dark-toggle--24, rgb(21 20 26 / 0.21));
   --button-secondary-active-fg-color:var(--button-secondary-fg-color);
   --button-secondary-active-border-color:var(--button-secondary-bg-color);
-  --button-secondary-hover-bg-color:rgb(21 20 26 / 0.14);
+  --csstools-light-dark-toggle--25:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.14);
+  --button-secondary-hover-bg-color:var(--csstools-light-dark-toggle--25, rgb(21 20 26 / 0.14));
   --button-secondary-hover-fg-color:var(--button-secondary-fg-color);
   --button-secondary-hover-border-color:var(--button-secondary-hover-bg-color);
 
-  --button-primary-bg-color:#0060df;
-  --button-primary-fg-color:#fbfbfe;
+  --csstools-light-dark-toggle--26:var(--csstools-color-scheme--light) #0df;
+
+  --button-primary-bg-color:var(--csstools-light-dark-toggle--26, #0060df);
+  --csstools-light-dark-toggle--27:var(--csstools-color-scheme--light) #15141a;
+  --button-primary-fg-color:var(--csstools-light-dark-toggle--27, #fbfbfe);
   --button-primary-border-color:var(--button-primary-bg-color);
-  --button-primary-active-bg-color:#054096;
+  --csstools-light-dark-toggle--28:var(--csstools-color-scheme--light) #aaf2ff;
+  --button-primary-active-bg-color:var(--csstools-light-dark-toggle--28, #054096);
   --button-primary-active-fg-color:var(--button-primary-fg-color);
   --button-primary-active-border-color:var(--button-primary-active-bg-color);
-  --button-primary-hover-bg-color:#0250bb;
+  --csstools-light-dark-toggle--29:var(--csstools-color-scheme--light) #80ebff;
+  --button-primary-hover-bg-color:var(--csstools-light-dark-toggle--29, #0250bb);
   --button-primary-hover-fg-color:var(--button-primary-fg-color);
   --button-primary-hover-border-color:var(--button-primary-hover-bg-color);
 
   --button-disabled-bg-color:color-mix(in srgb, currentcolor, transparent 60%);
   --button-disabled-fg-color:var(--button-disabled-bg-color);
 
-  --input-text-bg-color:white;
+  --csstools-light-dark-toggle--30:var(--csstools-color-scheme--light) #42414d;
+
+  --input-text-bg-color:var(--csstools-light-dark-toggle--30, white);
   --input-text-fg-color:var(--text-primary-color);
+}
+
+@supports (color: light-dark(red, red)){
+.dialog{
+  --dialog-bg-color:light-dark(white, #1c1b22);
+  --dialog-border-color:light-dark(white, #1c1b22);
+}
+}
+
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
+.dialog{
+  --dialog-shadow:0 2px 14px 0 light-dark(rgb(58 57 68 / 0.2), #15141a);
+}
+}
+
+@supports (color: light-dark(red, red)){
+.dialog{
+  --text-primary-color:light-dark(#15141a, #fbfbfe);
+  --text-secondary-color:light-dark(#5b5b66, #cfcfd8);
+  --link-fg-color:light-dark(#0060df, #0df);
+  --link-hover-fg-color:light-dark(#0250bb, #80ebff);
+  --separator-color:light-dark(#f0f0f4, #52525e);
+  --textarea-bg-color:light-dark(white, #42414d);
+
+  --radio-bg-color:light-dark(#f0f0f4, #2b2a33);
+  --radio-checked-bg-color:light-dark(#fbfbfe, #15141a);
+  --radio-checked-border-color:light-dark(#0060df, #0df);
+}
+}
+
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
+.dialog{
+
+  --button-secondary-bg-color:light-dark(
+    rgb(21 20 26 / 0.07),
+    rgb(251 251 254 / 0.07)
+  );
+  --button-secondary-active-bg-color:light-dark(
+    rgb(21 20 26 / 0.21),
+    rgb(251 251 254 / 0.21)
+  );
+  --button-secondary-hover-bg-color:light-dark(
+    rgb(21 20 26 / 0.14),
+    rgb(251 251 254 / 0.14)
+  );
+}
+}
+
+@supports (color: light-dark(red, red)){
+.dialog{
+
+  --button-primary-bg-color:light-dark(#0060df, #0df);
+  --button-primary-fg-color:light-dark(#fbfbfe, #15141a);
+  --button-primary-active-bg-color:light-dark(#054096, #aaf2ff);
+  --button-primary-hover-bg-color:light-dark(#0250bb, #80ebff);
+
+  --input-text-bg-color:light-dark(white, #42414d);
+}
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.dialog *{
+  --csstools-light-dark-toggle--11:var(--csstools-color-scheme--light) #1c1b22;
+  --dialog-bg-color:var(--csstools-light-dark-toggle--11, white);
+  --csstools-light-dark-toggle--12:var(--csstools-color-scheme--light) #1c1b22;
+  --dialog-border-color:var(--csstools-light-dark-toggle--12, white);
+  --csstools-light-dark-toggle--13:var(--csstools-color-scheme--light) #15141a;
+  --dialog-shadow:0 2px 14px 0 var(--csstools-light-dark-toggle--13, rgb(58 57 68 / 0.2));
+  --csstools-light-dark-toggle--14:var(--csstools-color-scheme--light) #fbfbfe;
+  --text-primary-color:var(--csstools-light-dark-toggle--14, #15141a);
+  --csstools-light-dark-toggle--15:var(--csstools-color-scheme--light) #cfcfd8;
+  --text-secondary-color:var(--csstools-light-dark-toggle--15, #5b5b66);
+  --csstools-light-dark-toggle--16:var(--csstools-color-scheme--light) #0df;
+  --link-fg-color:var(--csstools-light-dark-toggle--16, #0060df);
+  --csstools-light-dark-toggle--17:var(--csstools-color-scheme--light) #80ebff;
+  --link-hover-fg-color:var(--csstools-light-dark-toggle--17, #0250bb);
+  --csstools-light-dark-toggle--18:var(--csstools-color-scheme--light) #52525e;
+  --separator-color:var(--csstools-light-dark-toggle--18, #f0f0f4);
+  --csstools-light-dark-toggle--19:var(--csstools-color-scheme--light) #42414d;
+  --textarea-bg-color:var(--csstools-light-dark-toggle--19, white);
+
+  --csstools-light-dark-toggle--20:var(--csstools-color-scheme--light) #2b2a33;
+
+  --radio-bg-color:var(--csstools-light-dark-toggle--20, #f0f0f4);
+  --csstools-light-dark-toggle--21:var(--csstools-color-scheme--light) #15141a;
+  --radio-checked-bg-color:var(--csstools-light-dark-toggle--21, #fbfbfe);
+  --csstools-light-dark-toggle--22:var(--csstools-color-scheme--light) #0df;
+  --radio-checked-border-color:var(--csstools-light-dark-toggle--22, #0060df);
+
+  --csstools-light-dark-toggle--23:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.07);
+
+  --button-secondary-bg-color:var(--csstools-light-dark-toggle--23, rgb(21 20 26 / 0.07));
+  --csstools-light-dark-toggle--24:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.21);
+  --button-secondary-active-bg-color:var(--csstools-light-dark-toggle--24, rgb(21 20 26 / 0.21));
+  --csstools-light-dark-toggle--25:var(--csstools-color-scheme--light) rgb(251 251 254 / 0.14);
+  --button-secondary-hover-bg-color:var(--csstools-light-dark-toggle--25, rgb(21 20 26 / 0.14));
+
+  --csstools-light-dark-toggle--26:var(--csstools-color-scheme--light) #0df;
+
+  --button-primary-bg-color:var(--csstools-light-dark-toggle--26, #0060df);
+  --csstools-light-dark-toggle--27:var(--csstools-color-scheme--light) #15141a;
+  --button-primary-fg-color:var(--csstools-light-dark-toggle--27, #fbfbfe);
+  --csstools-light-dark-toggle--28:var(--csstools-color-scheme--light) #aaf2ff;
+  --button-primary-active-bg-color:var(--csstools-light-dark-toggle--28, #054096);
+  --csstools-light-dark-toggle--29:var(--csstools-color-scheme--light) #80ebff;
+  --button-primary-hover-bg-color:var(--csstools-light-dark-toggle--29, #0250bb);
+
+  --csstools-light-dark-toggle--30:var(--csstools-color-scheme--light) #42414d;
+
+  --input-text-bg-color:var(--csstools-light-dark-toggle--30, white);
+  }
 }
 
 @media (prefers-color-scheme: dark){
 
 .dialog{
-    --dialog-bg-color:#1c1b22;
-    --dialog-border-color:#1c1b22;
-    --dialog-shadow:0 2px 14px 0 #15141a;
-    --text-primary-color:#fbfbfe;
-    --text-secondary-color:#cfcfd8;
     --hover-filter:brightness(1.4);
-    --link-fg-color:#0df;
-    --link-hover-fg-color:#80ebff;
-    --separator-color:#52525e;
-
-    --textarea-bg-color:#42414d;
-
-    --radio-bg-color:#2b2a33;
-    --radio-checked-bg-color:#15141a;
-    --radio-checked-border-color:#0df;
-
-    --button-secondary-bg-color:rgb(251 251 254 / 0.07);
-    --button-secondary-active-bg-color:rgb(251 251 254 / 0.21);
-    --button-secondary-hover-bg-color:rgb(251 251 254 / 0.14);
-    --button-primary-bg-color:#0df;
-    --button-primary-fg-color:#15141a;
-    --button-primary-active-bg-color:#aaf2ff;
-    --button-primary-hover-bg-color:#80ebff;
-
-    --input-text-bg-color:#42414d;
 }
   }
 
@@ -574,22 +765,52 @@
     }
 
 :is(.dialog .mainContainer) .messageBar{
-      --message-bar-bg-color:#ffebcd;
-      --message-bar-fg-color:#15141a;
-      --message-bar-border-color:rgb(0 0 0 / 0.08);
+      --csstools-light-dark-toggle--31:var(--csstools-color-scheme--light) #5a3100;
+      --message-bar-bg-color:var(--csstools-light-dark-toggle--31, #ffebcd);
+      --csstools-light-dark-toggle--32:var(--csstools-color-scheme--light) #fbfbfe;
+      --message-bar-fg-color:var(--csstools-light-dark-toggle--32, #15141a);
+      --csstools-light-dark-toggle--33:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
+      --message-bar-border-color:var(--csstools-light-dark-toggle--33, rgb(0 0 0 / 0.08));
       --message-bar-icon:url(images/messageBar_warning.svg);
-      --message-bar-icon-color:#cd411e;
+      --csstools-light-dark-toggle--34:var(--csstools-color-scheme--light) #e49c49;
+      --message-bar-icon-color:var(--csstools-light-dark-toggle--34, #cd411e);
     }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :is(.dialog .mainContainer) .messageBar{
-        --message-bar-bg-color:#5a3100;
-        --message-bar-fg-color:#fbfbfe;
-        --message-bar-border-color:rgb(255 255 255 / 0.08);
-        --message-bar-icon-color:#e49c49;
+      --message-bar-bg-color:light-dark(#ffebcd, #5a3100);
+      --message-bar-fg-color:light-dark(#15141a, #fbfbfe);
     }
-      }
+}
+
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
+:is(.dialog .mainContainer) .messageBar{
+      --message-bar-border-color:light-dark(
+        rgb(0 0 0 / 0.08),
+        rgb(255 255 255 / 0.08)
+      );
+    }
+}
+
+@supports (color: light-dark(red, red)){
+:is(.dialog .mainContainer) .messageBar{
+      --message-bar-icon-color:light-dark(#cd411e, #e49c49);
+    }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:is(:is(.dialog .mainContainer) .messageBar) *{
+      --csstools-light-dark-toggle--31:var(--csstools-color-scheme--light) #5a3100;
+      --message-bar-bg-color:var(--csstools-light-dark-toggle--31, #ffebcd);
+      --csstools-light-dark-toggle--32:var(--csstools-color-scheme--light) #fbfbfe;
+      --message-bar-fg-color:var(--csstools-light-dark-toggle--32, #15141a);
+      --csstools-light-dark-toggle--33:var(--csstools-color-scheme--light) rgb(255 255 255 / 0.08);
+      --message-bar-border-color:var(--csstools-light-dark-toggle--33, rgb(0 0 0 / 0.08));
+      --csstools-light-dark-toggle--34:var(--csstools-color-scheme--light) #e49c49;
+      --message-bar-icon-color:var(--csstools-light-dark-toggle--34, #cd411e);
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -769,6 +990,9 @@
   }
 
 .annotationLayer{
+  --csstools-color-scheme--light:initial;
+  color-scheme:only light;
+
   --annotation-unfocused-field-background:url("data:image/svg+xml;charset=UTF-8,<svg width='1px' height='1px' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' style='fill:rgba(0, 54, 255, 0.13);'/></svg>");
   --input-focus-border-color:Highlight;
   --input-focus-outline:1px solid Canvas;
@@ -1049,6 +1273,7 @@
 
 .annotationLayer .popup{
     background-color:rgb(255 255 153);
+    color:black;
     box-shadow:0 calc(2px * var(--total-scale-factor)) calc(5px * var(--total-scale-factor)) rgb(136 136 136);
     border-radius:calc(2px * var(--total-scale-factor));
     outline:1.5px solid rgb(255 255 74);
@@ -1151,6 +1376,9 @@
 }
 
 .xfaLayer{
+  --csstools-color-scheme--light:initial;
+  color-scheme:only light;
+
   background-color:transparent;
 }
 
@@ -1565,30 +1793,50 @@
     currentColor 21%,
     transparent
   );
-  --color-accent-primary:#0060df;
-  --color-accent-primary-hover:#0250bb;
-  --color-accent-primary-active:#054096;
+  --csstools-light-dark-toggle--35:var(--csstools-color-scheme--light) #0df;
+  --color-accent-primary:var(--csstools-light-dark-toggle--35, #0060df);
+  --csstools-light-dark-toggle--36:var(--csstools-color-scheme--light) #80ebff;
+  --color-accent-primary-hover:var(--csstools-light-dark-toggle--36, #0250bb);
+  --csstools-light-dark-toggle--37:var(--csstools-color-scheme--light) #aaf2ff;
+  --color-accent-primary-active:var(--csstools-light-dark-toggle--37, #054096);
   --border-radius-circle:9999px;
   --border-width:1px;
   --size-item-small:16px;
   --size-item-large:32px;
-  --color-canvas:white;
+  --csstools-light-dark-toggle--38:var(--csstools-color-scheme--light) #1c1b22;
+  --color-canvas:var(--csstools-light-dark-toggle--38, white);
   --background-color-canvas:var(--color-canvas);
-  --border-color-interactive:#8f8f9d;
+  --csstools-light-dark-toggle--39:var(--csstools-color-scheme--light) #f9f9fa;
+  --border-color-interactive:var(--csstools-light-dark-toggle--39, #8f8f9d);
   --border-color-interactive-hover:var(--border-color-interactive);
   --border-color-interactive-active:var(--border-color-interactive);
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 .toggle-button{
-    --color-accent-primary:#0df;
-    --color-accent-primary-hover:#80ebff;
-    --color-accent-primary-active:#aaf2ff;
-    --color-canvas:#1c1b22;
-    --border-color-interactive:#f9f9fa;
+  --color-accent-primary:light-dark(#0060df, #0df);
+  --color-accent-primary-hover:light-dark(#0250bb, #80ebff);
+  --color-accent-primary-active:light-dark(#054096, #aaf2ff);
+  --color-canvas:light-dark(white, #1c1b22);
+  --border-color-interactive:light-dark(#8f8f9d, #f9f9fa);
 }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.toggle-button *{
+  --csstools-light-dark-toggle--35:var(--csstools-color-scheme--light) #0df;
+  --color-accent-primary:var(--csstools-light-dark-toggle--35, #0060df);
+  --csstools-light-dark-toggle--36:var(--csstools-color-scheme--light) #80ebff;
+  --color-accent-primary-hover:var(--csstools-light-dark-toggle--36, #0250bb);
+  --csstools-light-dark-toggle--37:var(--csstools-color-scheme--light) #aaf2ff;
+  --color-accent-primary-active:var(--csstools-light-dark-toggle--37, #054096);
+  --csstools-light-dark-toggle--38:var(--csstools-color-scheme--light) #1c1b22;
+  --color-canvas:var(--csstools-light-dark-toggle--38, white);
+  --csstools-light-dark-toggle--39:var(--csstools-color-scheme--light) #f9f9fa;
+  --border-color-interactive:var(--csstools-light-dark-toggle--39, #8f8f9d);
   }
+}
 
 @media (forced-colors: active){
 
@@ -1765,27 +2013,44 @@
 
 :root{
   --clear-signature-button-icon:url(images/editor-toolbar-delete.svg);
-  --signature-bg:#f9f9fb;
-  --signature-hover-bg:#f0f0f4;
+  --csstools-light-dark-toggle--40:var(--csstools-color-scheme--light) #2b2a33;
+  --signature-bg:var(--csstools-light-dark-toggle--40, #f9f9fb);
+  --csstools-light-dark-toggle--41:var(--csstools-color-scheme--light) var(--signature-bg);
+  --signature-hover-bg:var(--csstools-light-dark-toggle--41, #f0f0f4);
   --button-signature-bg:transparent;
   --button-signature-color:var(--main-color);
-  --button-signature-active-bg:#cfcfd8;
+  --csstools-light-dark-toggle--42:var(--csstools-color-scheme--light) #5b5b66;
+  --button-signature-active-bg:var(--csstools-light-dark-toggle--42, #cfcfd8);
   --button-signature-active-border:none;
   --button-signature-active-color:var(--button-signature-color);
   --button-signature-border:none;
-  --button-signature-hover-bg:#e0e0e6;
+  --csstools-light-dark-toggle--43:var(--csstools-color-scheme--light) #52525e;
+  --button-signature-hover-bg:var(--csstools-light-dark-toggle--43, #e0e0e6);
   --button-signature-hover-color:var(--button-signature-color);
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :root{
-    --signature-bg:#2b2a33;
-    --signature-hover-bg:var(--signature-bg);
-    --button-signature-active-bg:#5b5b66;
-    --button-signature-hover-bg:#52525e;
+  --signature-bg:light-dark(#f9f9fb, #2b2a33);
+  --signature-hover-bg:light-dark(#f0f0f4, var(--signature-bg));
+  --button-signature-active-bg:light-dark(#cfcfd8, #5b5b66);
+  --button-signature-hover-bg:light-dark(#e0e0e6, #52525e);
 }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:root *{
+  --csstools-light-dark-toggle--40:var(--csstools-color-scheme--light) #2b2a33;
+  --signature-bg:var(--csstools-light-dark-toggle--40, #f9f9fb);
+  --csstools-light-dark-toggle--41:var(--csstools-color-scheme--light) var(--signature-bg);
+  --signature-hover-bg:var(--csstools-light-dark-toggle--41, #f0f0f4);
+  --csstools-light-dark-toggle--42:var(--csstools-color-scheme--light) #5b5b66;
+  --button-signature-active-bg:var(--csstools-light-dark-toggle--42, #cfcfd8);
+  --csstools-light-dark-toggle--43:var(--csstools-color-scheme--light) #52525e;
+  --button-signature-hover-bg:var(--csstools-light-dark-toggle--43, #e0e0e6);
   }
+}
 
 @media screen and (forced-colors: active){
 
@@ -1927,6 +2192,7 @@
   --thickness-bg:var(--dialog-bg-color);
   --thickness-label-color:var(--primary-color);
   --thickness-slider-color:var(--primary-color);
+  --thickness-border:none;
   --draw-cursor:url(images/cursor-editorInk.svg) 0 16, pointer;
 }
 
@@ -1988,6 +2254,7 @@
     --thickness-bg:Canvas;
     --thickness-label-color:CanvasText;
     --thickness-slider-color:ButtonText;
+    --thickness-border:1px solid var(--border-color);
 }
   }
 
@@ -2193,11 +2460,15 @@
               align-items:center;
               justify-content:center;
               gap:8px;
-              padding:6px 8px;
+              padding:6px 8px 7px;
               margin:0;
               background-color:var(--thickness-bg);
               border-radius:4px 4px 0 0;
+              border-inline:var(--thickness-border);
+              border-top:var(--thickness-border);
               pointer-events:auto;
+              position:relative;
+              top:1px;
             }
 
 :is(:is(#addSignatureDrawContainer:is(:is(:is(#addSignatureDialog .mainContainer) #addSignatureActionContainer) > [role="tabpanel"]) #thickness) > div)  > label{
@@ -2787,36 +3058,59 @@
 
 :is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar{
     --editor-toolbar-delete-image:url(images/editor-toolbar-delete.svg);
-    --editor-toolbar-bg-color:#f0f0f4;
+    --csstools-light-dark-toggle--44:var(--csstools-color-scheme--light) #2b2a33;
+    --editor-toolbar-bg-color:var(--csstools-light-dark-toggle--44, #f0f0f4);
     --editor-toolbar-highlight-image:url(images/toolbarButton-editorHighlight.svg);
-    --editor-toolbar-fg-color:#2e2e56;
+    --csstools-light-dark-toggle--45:var(--csstools-color-scheme--light) #fbfbfe;
+    --editor-toolbar-fg-color:var(--csstools-light-dark-toggle--45, #2e2e56);
     --editor-toolbar-border-color:#8f8f9d;
     --editor-toolbar-hover-border-color:var(--editor-toolbar-border-color);
-    --editor-toolbar-hover-bg-color:#e0e0e6;
+    --csstools-light-dark-toggle--46:var(--csstools-color-scheme--light) #52525e;
+    --editor-toolbar-hover-bg-color:var(--csstools-light-dark-toggle--46, #e0e0e6);
     --editor-toolbar-hover-fg-color:var(--editor-toolbar-fg-color);
     --editor-toolbar-hover-outline:none;
-    --editor-toolbar-focus-outline-color:#0060df;
+    --csstools-light-dark-toggle--47:var(--csstools-color-scheme--light) #0df;
+    --editor-toolbar-focus-outline-color:var(--csstools-light-dark-toggle--47, #0060df);
     --editor-toolbar-shadow:0 2px 6px 0 rgb(58 57 68 / 0.2);
     --editor-toolbar-vert-offset:6px;
     --editor-toolbar-height:28px;
     --editor-toolbar-padding:2px;
-    --alt-text-done-color:#2ac3a2;
-    --alt-text-warning-color:#0090ed;
+    --csstools-light-dark-toggle--48:var(--csstools-color-scheme--light) #54ffbd;
+    --alt-text-done-color:var(--csstools-light-dark-toggle--48, #2ac3a2);
+    --csstools-light-dark-toggle--49:var(--csstools-color-scheme--light) #80ebff;
+    --alt-text-warning-color:var(--csstools-light-dark-toggle--49, #0090ed);
     --alt-text-hover-done-color:var(--alt-text-done-color);
     --alt-text-hover-warning-color:var(--alt-text-warning-color);
   }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar{
-      --editor-toolbar-bg-color:#2b2a33;
-      --editor-toolbar-fg-color:#fbfbfe;
-      --editor-toolbar-hover-bg-color:#52525e;
-      --editor-toolbar-focus-outline-color:#0df;
-      --alt-text-done-color:#54ffbd;
-      --alt-text-warning-color:#80ebff;
+    --editor-toolbar-bg-color:light-dark(#f0f0f4, #2b2a33);
+    --editor-toolbar-fg-color:light-dark(#2e2e56, #fbfbfe);
+    --editor-toolbar-hover-bg-color:light-dark(#e0e0e6, #52525e);
+    --editor-toolbar-focus-outline-color:light-dark(#0060df, #0df);
+    --alt-text-done-color:light-dark(#2ac3a2, #54ffbd);
+    --alt-text-warning-color:light-dark(#0090ed, #80ebff);
   }
-    }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:is(:is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar) *{
+    --csstools-light-dark-toggle--44:var(--csstools-color-scheme--light) #2b2a33;
+    --editor-toolbar-bg-color:var(--csstools-light-dark-toggle--44, #f0f0f4);
+    --csstools-light-dark-toggle--45:var(--csstools-color-scheme--light) #fbfbfe;
+    --editor-toolbar-fg-color:var(--csstools-light-dark-toggle--45, #2e2e56);
+    --csstools-light-dark-toggle--46:var(--csstools-color-scheme--light) #52525e;
+    --editor-toolbar-hover-bg-color:var(--csstools-light-dark-toggle--46, #e0e0e6);
+    --csstools-light-dark-toggle--47:var(--csstools-color-scheme--light) #0df;
+    --editor-toolbar-focus-outline-color:var(--csstools-light-dark-toggle--47, #0060df);
+    --csstools-light-dark-toggle--48:var(--csstools-color-scheme--light) #54ffbd;
+    --alt-text-done-color:var(--csstools-light-dark-toggle--48, #2ac3a2);
+    --csstools-light-dark-toggle--49:var(--csstools-color-scheme--light) #80ebff;
+    --alt-text-warning-color:var(--csstools-light-dark-toggle--49, #0090ed);
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3046,20 +3340,39 @@
         }
 
 .show:is(:is(:is(:is(:is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar) .buttons) .altText) .tooltip){
-            --alt-text-tooltip-bg:#f0f0f4;
-            --alt-text-tooltip-fg:#15141a;
+            --csstools-light-dark-toggle--50:var(--csstools-color-scheme--light) #1c1b22;
+            --alt-text-tooltip-bg:var(--csstools-light-dark-toggle--50, #f0f0f4);
+            --csstools-light-dark-toggle--51:var(--csstools-color-scheme--light) #fbfbfe;
+            --alt-text-tooltip-fg:var(--csstools-light-dark-toggle--51, #15141a);
             --alt-text-tooltip-border:#8f8f9d;
-            --alt-text-tooltip-shadow:0px 2px 6px 0px rgb(58 57 68 / 0.2);
+            --csstools-light-dark-toggle--52:var(--csstools-color-scheme--light) #15141a;
+            --alt-text-tooltip-shadow:0px 2px 6px 0px var(--csstools-light-dark-toggle--52, rgb(58 57 68 / 0.2));
           }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 .show:is(:is(:is(:is(:is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar) .buttons) .altText) .tooltip){
-              --alt-text-tooltip-bg:#1c1b22;
-              --alt-text-tooltip-fg:#fbfbfe;
-              --alt-text-tooltip-shadow:0px 2px 6px 0px #15141a;
+            --alt-text-tooltip-bg:light-dark(#f0f0f4, #1c1b22);
+            --alt-text-tooltip-fg:light-dark(#15141a, #fbfbfe);
           }
-            }
+}
+
+@supports (color: light-dark(red, red)) and (color: rgb(0 0 0 / 0)){
+.show:is(:is(:is(:is(:is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar) .buttons) .altText) .tooltip){
+            --alt-text-tooltip-shadow:0px 2px 6px 0px light-dark(rgb(58 57 68 / 0.2), #15141a);
+          }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.show:is(:is(:is(:is(:is(.annotationEditorLayer :is(.freeTextEditor,.inkEditor,.stampEditor,.highlightEditor,.signatureEditor),.textLayer) .editToolbar) .buttons) .altText) .tooltip) *{
+            --csstools-light-dark-toggle--50:var(--csstools-color-scheme--light) #1c1b22;
+            --alt-text-tooltip-bg:var(--csstools-light-dark-toggle--50, #f0f0f4);
+            --csstools-light-dark-toggle--51:var(--csstools-color-scheme--light) #fbfbfe;
+            --alt-text-tooltip-fg:var(--csstools-light-dark-toggle--51, #15141a);
+            --csstools-light-dark-toggle--52:var(--csstools-color-scheme--light) #15141a;
+            --alt-text-tooltip-shadow:0px 2px 6px 0px var(--csstools-light-dark-toggle--52, rgb(58 57 68 / 0.2));
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3173,19 +3486,33 @@
   }
 
 :is(.annotationEditorLayer .stampEditor) .noAltTextBadge{
-    --no-alt-text-badge-border-color:#f0f0f4;
-    --no-alt-text-badge-bg-color:#cfcfd8;
-    --no-alt-text-badge-fg-color:#5b5b66;
+    --csstools-light-dark-toggle--53:var(--csstools-color-scheme--light) #52525e;
+    --no-alt-text-badge-border-color:var(--csstools-light-dark-toggle--53, #f0f0f4);
+    --csstools-light-dark-toggle--54:var(--csstools-color-scheme--light) #fbfbfe;
+    --no-alt-text-badge-bg-color:var(--csstools-light-dark-toggle--54, #cfcfd8);
+    --csstools-light-dark-toggle--55:var(--csstools-color-scheme--light) #15141a;
+    --no-alt-text-badge-fg-color:var(--csstools-light-dark-toggle--55, #5b5b66);
   }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :is(.annotationEditorLayer .stampEditor) .noAltTextBadge{
-      --no-alt-text-badge-border-color:#52525e;
-      --no-alt-text-badge-bg-color:#fbfbfe;
-      --no-alt-text-badge-fg-color:#15141a;
+    --no-alt-text-badge-border-color:light-dark(#f0f0f4, #52525e);
+    --no-alt-text-badge-bg-color:light-dark(#cfcfd8, #fbfbfe);
+    --no-alt-text-badge-fg-color:light-dark(#5b5b66, #15141a);
   }
-    }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:is(:is(.annotationEditorLayer .stampEditor) .noAltTextBadge) *{
+    --csstools-light-dark-toggle--53:var(--csstools-color-scheme--light) #52525e;
+    --no-alt-text-badge-border-color:var(--csstools-light-dark-toggle--53, #f0f0f4);
+    --csstools-light-dark-toggle--54:var(--csstools-color-scheme--light) #fbfbfe;
+    --no-alt-text-badge-bg-color:var(--csstools-light-dark-toggle--54, #cfcfd8);
+    --csstools-light-dark-toggle--55:var(--csstools-color-scheme--light) #15141a;
+    --no-alt-text-badge-fg-color:var(--csstools-light-dark-toggle--55, #5b5b66);
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3416,16 +3743,24 @@
 .dialog.newAltText{
   --new-alt-text-ai-disclaimer-icon:url(images/altText_disclaimer.svg);
   --new-alt-text-spinner-icon:url(images/altText_spinner.svg);
-  --preview-image-bg-color:#f0f0f4;
+  --csstools-light-dark-toggle--56:var(--csstools-color-scheme--light) #2b2a33;
+  --preview-image-bg-color:var(--csstools-light-dark-toggle--56, #f0f0f4);
   --preview-image-border:none;
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 .dialog.newAltText{
-    --preview-image-bg-color:#2b2a33;
+  --preview-image-bg-color:light-dark(#f0f0f4, #2b2a33);
 }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.dialog.newAltText *{
+  --csstools-light-dark-toggle--56:var(--csstools-color-scheme--light) #2b2a33;
+  --preview-image-bg-color:var(--csstools-light-dark-toggle--56, #f0f0f4);
   }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3614,19 +3949,33 @@
         }
 
 .colorPicker{
-  --hover-outline-color:#0250bb;
-  --selected-outline-color:#0060df;
-  --swatch-border-color:#cfcfd8;
+  --csstools-light-dark-toggle--57:var(--csstools-color-scheme--light) #80ebff;
+  --hover-outline-color:var(--csstools-light-dark-toggle--57, #0250bb);
+  --csstools-light-dark-toggle--58:var(--csstools-color-scheme--light) #aaf2ff;
+  --selected-outline-color:var(--csstools-light-dark-toggle--58, #0060df);
+  --csstools-light-dark-toggle--59:var(--csstools-color-scheme--light) #52525e;
+  --swatch-border-color:var(--csstools-light-dark-toggle--59, #cfcfd8);
 }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 .colorPicker{
-    --hover-outline-color:#80ebff;
-    --selected-outline-color:#aaf2ff;
-    --swatch-border-color:#52525e;
+  --hover-outline-color:light-dark(#0250bb, #80ebff);
+  --selected-outline-color:light-dark(#0060df, #aaf2ff);
+  --swatch-border-color:light-dark(#cfcfd8, #52525e);
 }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+.colorPicker *{
+  --csstools-light-dark-toggle--57:var(--csstools-color-scheme--light) #80ebff;
+  --hover-outline-color:var(--csstools-light-dark-toggle--57, #0250bb);
+  --csstools-light-dark-toggle--58:var(--csstools-color-scheme--light) #aaf2ff;
+  --selected-outline-color:var(--csstools-light-dark-toggle--58, #0060df);
+  --csstools-light-dark-toggle--59:var(--csstools-color-scheme--light) #52525e;
+  --swatch-border-color:var(--csstools-light-dark-toggle--59, #cfcfd8);
   }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3859,15 +4208,27 @@
       align-items:center;
       align-self:stretch;
 
-      --example-color:#bfbfc9;
+      --csstools-light-dark-toggle--60:var(--csstools-color-scheme--light) #80808e;
+
+      --example-color:var(--csstools-light-dark-toggle--60, #bfbfc9);
     }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :is(#highlightParamsToolbarContainer #editorHighlightThickness) .thicknessPicker{
-        --example-color:#80808e;
+
+      --example-color:light-dark(#bfbfc9, #80808e);
     }
-      }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:is(:is(#highlightParamsToolbarContainer #editorHighlightThickness) .thicknessPicker) *{
+
+      --csstools-light-dark-toggle--60:var(--csstools-color-scheme--light) #80808e;
+
+      --example-color:var(--csstools-light-dark-toggle--60, #bfbfc9);
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3907,15 +4268,23 @@
   }
 
 :is(#highlightParamsToolbarContainer #editorHighlightVisibility) .divider{
-      --divider-color:#d7d7db;
+      --csstools-light-dark-toggle--61:var(--csstools-color-scheme--light) #8f8f9d;
+      --divider-color:var(--csstools-light-dark-toggle--61, #d7d7db);
     }
 
-@media (prefers-color-scheme: dark){
-
+@supports (color: light-dark(red, red)){
 :is(#highlightParamsToolbarContainer #editorHighlightVisibility) .divider{
-        --divider-color:#8f8f9d;
+      --divider-color:light-dark(#d7d7db, #8f8f9d);
     }
-      }
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:is(:is(#highlightParamsToolbarContainer #editorHighlightVisibility) .divider) *{
+      --csstools-light-dark-toggle--61:var(--csstools-color-scheme--light) #8f8f9d;
+      --divider-color:var(--csstools-light-dark-toggle--61, #d7d7db);
+  }
+}
 
 @media screen and (forced-colors: active){
 
@@ -3994,22 +4363,40 @@
     }
 
 :root{
+  --csstools-color-scheme--light:initial;
+  color-scheme:light dark;
+
   --viewer-container-height:0;
   --pdfViewer-padding-bottom:0;
   --page-margin:1px auto -8px;
   --page-border:9px solid transparent;
   --spreadHorizontalWrapped-margin-LR:-3.5px;
   --loading-icon-delay:400ms;
-  --focus-ring-color:#0060df;
+  --csstools-light-dark-toggle--62:var(--csstools-color-scheme--light) #0df;
+  --focus-ring-color:var(--csstools-light-dark-toggle--62, #0060df);
   --focus-ring-outline:2px solid var(--focus-ring-color);
+}
+
+@supports (color: light-dark(red, red)){
+:root{
+  --focus-ring-color:light-dark(#0060df, #0df);
+}
+}
+
+@supports not (color: light-dark(tan, tan)){
+
+:root *{
+  --csstools-light-dark-toggle--62:var(--csstools-color-scheme--light) #0df;
+  --focus-ring-color:var(--csstools-light-dark-toggle--62, #0060df);
+  }
 }
 
 @media (prefers-color-scheme: dark){
 
 :root{
-    --focus-ring-color:#0df;
+  --csstools-color-scheme--light:;
 }
-  }
+}
 
 @media screen and (forced-colors: active){
 
